@@ -1,0 +1,186 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-study-bg: var(--bg);
+  --color-study-surface: var(--surface);
+  --color-study-surface-muted: var(--surface-muted);
+  --color-study-surface-hover: var(--surface-hover);
+  --color-study-border: var(--border);
+  --color-study-border-subtle: var(--border-subtle);
+  
+  --color-study-text: var(--text);
+  --color-study-text-soft: var(--text-soft);
+  --color-study-text-muted: var(--text-muted);
+  --color-study-text-faint: var(--text-faint);
+
+  --color-study-primary: var(--primary);
+  --color-study-primary-hover: var(--primary-hover);
+  --color-study-primary-soft: var(--primary-soft);
+  --color-study-primary-border: var(--primary-border);
+
+  --color-study-accent: var(--accent);
+  --color-study-accent-soft: var(--accent-soft);
+  --color-study-accent-hover: var(--accent-hover);
+
+  --color-study-success: var(--success);
+  --color-study-success-soft: var(--success-soft);
+  --color-study-danger: var(--danger);
+  --color-study-danger-soft: var(--danger-soft);
+
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Light Mode: Warm Paper & Linen (Ergonomic for reading & prolonged study) */
+:root {
+  --bg: #FBFBF9;
+  --surface: #FFFFFF;
+  --surface-muted: #F4F2EB;
+  --surface-hover: #EFECE3;
+  --border: #E8E4DA;
+  --border-subtle: #F1EDE4;
+
+  --text: #1E2329;
+  --text-soft: #47515D;
+  --text-muted: #687582;
+  --text-faint: #98A2B0;
+
+  --primary: #0D9488;
+  --primary-hover: #0F766E;
+  --primary-soft: #E6F4F1;
+  --primary-border: #A7D8D0;
+
+  --accent: #D97706;
+  --accent-soft: #FEF3C7;
+  --accent-hover: #B45309;
+
+  --success: #059669;
+  --success-soft: #ECFDF5;
+  --danger: #E11D48;
+  --danger-soft: #FFE4E6;
+
+  color-scheme: light;
+}
+
+/* Dark Mode: Midnight Scholar (Deep warm slate, no eye strain, no pure black) */
+.dark {
+  --bg: #121518;
+  --surface: #1A1E23;
+  --surface-muted: #21262D;
+  --surface-hover: #282E37;
+  --border: #2D343D;
+  --border-subtle: #22272E;
+
+  --text: #E6EDF2;
+  --text-soft: #C3CBD4;
+  --text-muted: #8894A0;
+  --text-faint: #5B6673;
+
+  --primary: #14B8A6;
+  --primary-hover: #2DD4BF;
+  --primary-soft: #132B29;
+  --primary-border: #1E4E4A;
+
+  --accent: #F59E0B;
+  --accent-soft: #2C2214;
+  --accent-hover: #FBBF24;
+
+  --success: #10B981;
+  --success-soft: #132E23;
+  --danger: #FB7185;
+  --danger-soft: #32141A;
+
+  color-scheme: dark;
+}
+
+/* Global Reset & Ergonomic Typography */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+::selection {
+  background-color: rgba(13, 148, 136, 0.25);
+  color: inherit;
+}
+
+/* Smooth Focus Rings */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Keyframe Animations */
+@keyframes page-in {
+  from {
+    opacity: 0.4;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes waveform-pulse {
+  from {
+    transform: scaleY(0.45);
+  }
+  to {
+    transform: scaleY(1.15);
+  }
+}
+
+@keyframes record-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(217, 119, 6, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0);
+  }
+}
+
+.animate-waveform {
+  animation: waveform-pulse 0.5s ease-in-out infinite alternate;
+}
+
+.animate-record-ring {
+  animation: record-ring 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+/* Subtle Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}

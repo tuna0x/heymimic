@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom'
 import { weeklyProgress } from '../mocks/progress'
 import { todayPrompt } from '../mocks/speaking'
 import { ArrowLink, ProgressBar, SectionLabel, Streak } from '../components/shared/UI'
+import { usePageMeta } from '../hook/usePageMeta'
 
 export function Dashboard() {
+  usePageMeta('Hôm nay — Phòng Luyện Tập HeyMimic', 'Phòng học cá nhân hóa hôm nay: từ vựng và bài luyện phản xạ nói 60–90 giây.')
+
   const totalMinutes = weeklyProgress.reduce((sum, day) => sum + day.minutes, 0)
   const activeDays = weeklyProgress.filter((day) => day.minutes > 0).length
 

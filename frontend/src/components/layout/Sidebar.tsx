@@ -1,6 +1,7 @@
 import { BookOpen, ChartNoAxesCombined, Globe2, LayoutDashboard, Mic2, Moon, MoreHorizontal, Sun } from 'lucide-react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { Streak } from '../shared/UI'
+import { BrandLogo } from '../shared/BrandLogo'
 
 const navItems = [
   { to: '/dashboard', label: 'Hôm nay', icon: LayoutDashboard },
@@ -10,17 +11,25 @@ const navItems = [
 ]
 
 export function Sidebar({ isLight, onToggleTheme }: { isLight: boolean; onToggleTheme: () => void }) {
+  const location = useLocation()
+
+  const handleNavClick = (to: string) => {
+    if (location.pathname === to) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   return (
     <aside className="w-64 shrink-0 min-h-screen bg-study-surface border-r border-study-border p-5 flex flex-col justify-between select-none">
       <div>
         {/* Brand */}
-        <Link to="/dashboard" className="flex items-center gap-2.5 font-display font-bold text-xl tracking-tight text-study-text group mb-8">
-          <span className="w-8 h-8 rounded-xl bg-study-primary text-white flex items-center justify-center font-bold text-base shadow-xs group-hover:scale-105 transition-transform">
-            m
-          </span>
-          <span className="tracking-tight font-display">mimic</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-study-primary self-end mb-1" />
-        </Link>
+        <div className="mb-8">
+          <BrandLogo
+            size="md"
+            to="/dashboard"
+            onClick={() => handleNavClick('/dashboard')}
+          />
+        </div>
 
         {/* Section Label */}
         <div className="text-[11px] font-semibold uppercase tracking-wider text-study-text-muted px-3 mb-2">
@@ -33,6 +42,7 @@ export function Sidebar({ isLight, onToggleTheme }: { isLight: boolean; onToggle
             <NavLink
               key={to}
               to={to}
+              onClick={() => handleNavClick(to)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive

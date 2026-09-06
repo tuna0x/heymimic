@@ -2,8 +2,11 @@ import { ArrowDownRight, ArrowUpRight, BookOpen, Check, Flame, Headphones, Mic2,
 import { Link } from 'react-router-dom'
 import { commonMistakes, weeklyProgress } from '../mocks/progress'
 import { ArrowLink, ProgressBar, SectionLabel } from '../components/shared/UI'
+import { usePageMeta } from '../hook/usePageMeta'
 
 export function Progress() {
+  usePageMeta('Tiến Độ Học Tập & Nhịp Điệu — HeyMimic', 'Theo dõi sự tiến bộ và tính đều đặn trong việc luyện nói tiếng Anh mỗi ngày.')
+
   const maxMinutes = Math.max(...weeklyProgress.map((day) => day.minutes))
 
   return (

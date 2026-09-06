@@ -9,6 +9,7 @@ import { Landing } from '../pages/marketing/Landing'
 import { Login } from '../pages/marketing/Login'
 import { Signup } from '../pages/marketing/Signup'
 import { About } from '../pages/marketing/About'
+import { SpeakingMethod } from '../pages/marketing/SpeakingMethod'
 import { Contact } from '../pages/marketing/Contact'
 import { BlogIndex } from '../pages/marketing/BlogIndex'
 import { BlogPost } from '../pages/marketing/BlogPost'
@@ -23,6 +24,8 @@ export function AppRoutes() {
         <Route path={ROUTES.LOGIN} element={<Login />} />
         <Route path={ROUTES.SIGNUP} element={<Signup />} />
         <Route path={ROUTES.ABOUT} element={<About />} />
+        <Route path={ROUTES.SPEAKING_METHOD} element={<SpeakingMethod />} />
+        <Route path="/luyen-noi" element={<Navigate to={ROUTES.SPEAKING_METHOD} replace />} />
         <Route path={ROUTES.CONTACT} element={<Contact />} />
         <Route path={ROUTES.BLOG} element={<BlogIndex />} />
         <Route path={ROUTES.BLOG_POST} element={<BlogPost />} />

@@ -10,9 +10,10 @@ interface RephraseItem {
 interface SentenceDiffCardProps {
   rephrases: RephraseItem[]
   onSpeak: (text: string) => void
+  onPracticeSentence?: (sentence: string) => void
 }
 
-export function SentenceDiffCard({ rephrases, onSpeak }: SentenceDiffCardProps) {
+export function SentenceDiffCard({ rephrases, onSpeak, onPracticeSentence }: SentenceDiffCardProps) {
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
 
   const handlePlay = (text: string, index: number) => {
@@ -27,8 +28,8 @@ export function SentenceDiffCard({ rephrases, onSpeak }: SentenceDiffCardProps) 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-study-primary font-mono">
-          ĐỐI CHIẾU CÂU NÓI & GỢI Ý BẢN XỨ (NATIVE REPHRASING)
+        <span className="text-xs font-semibold text-study-primary">
+          Đối chiếu câu nói & gợi ý tự nhiên
         </span>
         <span className="text-[11px] text-study-text-muted">
           Bấm loa để nghe mẫu phát âm
@@ -47,8 +48,8 @@ export function SentenceDiffCard({ rephrases, onSpeak }: SentenceDiffCardProps) 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Before: Hesitant version */}
                 <div className="p-3.5 rounded-xl bg-study-surface-muted/50 border border-study-border/60 space-y-1.5">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                    Cách nói khi còn ấp úng
+                  <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                    Cách nói khi còn ngập ngừng
                   </span>
                   <p className="text-xs text-study-text-muted italic line-through leading-relaxed">
                     “{item.original}”
@@ -57,25 +58,38 @@ export function SentenceDiffCard({ rephrases, onSpeak }: SentenceDiffCardProps) 
 
                 {/* After: Native recommendation */}
                 <div className="p-3.5 rounded-xl bg-study-primary-soft/40 border border-study-primary-border/60 space-y-1.5 relative">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-study-primary flex items-center gap-1">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-[11px] font-semibold text-study-primary flex items-center gap-1">
                       <Sparkles size={12} />
-                      <span>Cách người bản xứ diễn đạt</span>
+                      <span>Cách nói tự nhiên hơn</span>
                     </span>
 
-                    <button
-                      type="button"
-                      onClick={() => handlePlay(item.native, idx)}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                        isPlaying
-                          ? 'bg-study-primary text-white scale-105'
-                          : 'bg-study-surface border border-study-primary-border/60 text-study-primary hover:bg-study-primary hover:text-white'
-                      }`}
-                      title="Nghe giọng bản xứ phát âm câu này"
-                    >
-                      <Volume2 size={13} className={isPlaying ? 'animate-pulse' : ''} />
-                      <span>{isPlaying ? 'Đang phát...' : 'Nghe câu mẫu'}</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handlePlay(item.native, idx)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                          isPlaying
+                            ? 'bg-study-primary text-white scale-105'
+                            : 'bg-study-surface border border-study-primary-border/60 text-study-primary hover:bg-study-primary hover:text-white'
+                        }`}
+                        title="Nghe giọng bản xứ phát âm câu này"
+                      >
+                        <Volume2 size={13} className={isPlaying ? 'animate-pulse' : ''} />
+                        <span>{isPlaying ? 'Đang phát...' : 'Nghe mẫu'}</span>
+                      </button>
+
+                      {onPracticeSentence && (
+                        <button
+                          type="button"
+                          onClick={() => onPracticeSentence(item.native)}
+                          className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-study-accent-soft text-study-accent hover:bg-study-accent hover:text-white transition-colors cursor-pointer"
+                          title="Thu âm thử câu này"
+                        >
+                          Luyện câu này
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <p className="text-xs font-medium text-study-text leading-relaxed">
@@ -83,6 +97,7 @@ export function SentenceDiffCard({ rephrases, onSpeak }: SentenceDiffCardProps) 
                   </p>
                 </div>
               </div>
+
 
               {/* Pedagogy explanation */}
               <div className="flex items-start gap-2 text-xs text-study-text-soft pt-1 border-t border-study-border/40">

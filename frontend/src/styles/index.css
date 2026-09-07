@@ -34,62 +34,64 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* Light Mode: Warm Pacific Teal — calm, professional, easy on the eyes */
+/* Palette from docs/PROJECT.md: primary = cyan, accent = warm CTA. */
 :root {
-  --bg: #F8FAFC;
+  --bg: #F7F9FA;
   --surface: #FFFFFF;
-  --surface-muted: #F1F5F9;
-  --surface-hover: #E2E8F0;
-  --border: #E2E8F0;
-  --border-subtle: #F1F5F9;
+  --surface-muted: #EFF3F5;
+  --surface-hover: #E1E6E8;
+  --border: #E1E6E8;
+  --border-subtle: #EFF3F5;
 
-  --text: #0F172A;
-  --text-soft: #334155;
-  --text-muted: #64748B;
-  --text-faint: #94A3B8;
+  --text: #1A2126;
+  --text-soft: #414C54;
+  --text-muted: #6B7680;
+  --text-faint: #89959E;
 
-  --primary: #0D9488;
-  --primary-hover: #0F766E;
-  --primary-soft: #F0FDFA;
-  --primary-border: #99F6E4;
+  --primary: #0FA8B8;
+  --primary-hover: #087C89;
+  --primary-soft: #E3F4F6;
+  --primary-border: #ACDDE2;
 
-  --accent: #EA580C;
-  --accent-soft: #FFF7ED;
-  --accent-hover: #C2410C;
+  --warm: #D97A56;
+  --accent: var(--warm);
+  --accent-soft: #FAEDE7;
+  --accent-hover: #BC6040;
 
-  --success: #059669;
-  --success-soft: #ECFDF5;
+  --success: #2FA88E;
+  --success-soft: #E5F5EF;
   --danger: #E11D48;
   --danger-soft: #FFE4E6;
 
   color-scheme: light;
 }
 
-/* Dark Mode: Deep Midnight with Soft Pacific Teal glow */
+/* Dark mode: charcoal surfaces, cyan and terracotta. */
 .dark {
-  --bg: #090D14;
-  --surface: #101622;
-  --surface-muted: #172033;
-  --surface-hover: #1E293B;
-  --border: #1E293B;
-  --border-subtle: #141D2B;
+  --bg: #12181C;
+  --surface: #1B2329;
+  --surface-muted: #202A31;
+  --surface-hover: #28323A;
+  --border: #28323A;
+  --border-subtle: #232D34;
 
-  --text: #F8FAFC;
-  --text-soft: #CBD5E1;
-  --text-muted: #8292A6;
-  --text-faint: #4E5D78;
+  --text: #E7EDF0;
+  --text-soft: #B9C5CD;
+  --text-muted: #8A96A0;
+  --text-faint: #6B7984;
 
-  --primary: #2DD4BF;
-  --primary-hover: #5EEAD4;
-  --primary-soft: rgba(45, 212, 191, 0.12);
-  --primary-border: rgba(94, 234, 212, 0.30);
+  --primary: #3FD4E0;
+  --primary-hover: #72E0E8;
+  --primary-soft: #1E343A;
+  --primary-border: rgba(63, 212, 224, 0.30);
 
-  --accent: #FB923C;
-  --accent-soft: #431407;
-  --accent-hover: #FDBA74;
+  --warm: #E28A63;
+  --accent: var(--warm);
+  --accent-soft: #3C2B25;
+  --accent-hover: #EDA583;
 
-  --success: #10B981;
-  --success-soft: #064E3B;
+  --success: #48C2A4;
+  --success-soft: #203B33;
   --danger: #FB7185;
   --danger-soft: #4C0519;
 
@@ -118,7 +120,7 @@ html, body {
 }
 
 ::selection {
-  background-color: rgba(13, 148, 136, 0.22);
+  background-color: rgba(15, 168, 184, 0.22);
   color: inherit;
 }
 
@@ -144,14 +146,14 @@ html, body {
 }
 
 .clean-card-hover:hover {
-  border-color: rgba(13, 148, 136, 0.35);
+  border-color: rgba(15, 168, 184, 0.35);
   transform: translateY(-3px);
-  box-shadow: 0 14px 32px -8px rgba(13, 148, 136, 0.10), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 14px 32px -8px rgba(15, 168, 184, 0.10), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
 }
 
 .dark .clean-card-hover:hover {
-  border-color: rgba(45, 212, 191, 0.4);
-  box-shadow: 0 16px 36px -8px rgba(45, 212, 191, 0.2);
+  border-color: rgba(63, 212, 224, 0.4);
+  box-shadow: 0 16px 36px -8px rgba(63, 212, 224, 0.2);
 }
 
 /* Text balance helper */
@@ -168,15 +170,15 @@ html, body {
 
 @keyframes record-ring {
   0% {
-    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.40);
+    box-shadow: 0 0 0 0 rgba(15, 168, 184, 0.40);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 0 16px rgba(13, 148, 136, 0.12);
+    box-shadow: 0 0 0 16px rgba(15, 168, 184, 0.12);
     transform: scale(1.03);
   }
   100% {
-    box-shadow: 0 0 0 26px rgba(13, 148, 136, 0);
+    box-shadow: 0 0 0 26px rgba(15, 168, 184, 0);
     transform: scale(1);
   }
 }
@@ -223,7 +225,7 @@ html, body {
 
 .shimmer-btn {
   background-size: 200% auto;
-  background-image: linear-gradient(90deg, var(--primary) 0%, #14B8A6 25%, #2DD4BF 50%, #14B8A6 75%, var(--primary) 100%);
+  background-image: linear-gradient(90deg, var(--primary) 0%, #25BECC 25%, #3FD4E0 50%, #25BECC 75%, var(--primary) 100%);
   animation: shimmer-sweep 4s linear infinite;
 }
 

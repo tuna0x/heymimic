@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BrandLogo } from '../../components/shared/BrandLogo'
 import { usePageMeta } from '../../hook/usePageMeta'
+import { useAuth } from '../../context/AuthContext'
 
 export function Signup() {
   usePageMeta(
@@ -10,15 +11,17 @@ export function Signup() {
     'Tạo phòng luyện nói cá nhân hóa của bạn trên HeyMimic.'
   )
 
+  const { signup } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [notice, setNotice] = useState('')
   const navigate = useNavigate()
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!name.trim()) return setError('Vui lòng nhập tên của bạn.')
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
@@ -30,9 +33,15 @@ export function Signup() {
 
     setLoading(true)
     setError('')
-    setTimeout(() => {
-      navigate('/dashboard')
-    }, 350)
+    try {
+      await signup(name, email, password)
+      // Navigate to onboarding wizard as per spec 5.2 & A02
+      navigate('/onboarding')
+    } catch {
+      setError('Đăng ký thất bại. Vui lòng thử lại.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -48,7 +57,7 @@ export function Signup() {
         </Link>
 
         {/* Minimalist Card */}
-        <div className="clean-card rounded-2xl p-7 sm:p-9 space-y-6 shadow-sm">
+        <div className="clean-card rounded-2xl p-7 sm:p-9 space-y-6 shadow-sm bg-study-surface border border-study-border">
           {/* Header */}
           <div className="space-y-3 text-center flex flex-col items-center">
             <BrandLogo size="md" />
@@ -62,13 +71,10 @@ export function Signup() {
             </div>
           </div>
 
-          {/* 1-Click Google OAuth */}
+          {/* Google notice */}
           <button
             type="button"
-            onClick={() => {
-              setLoading(true)
-              setTimeout(() => navigate('/dashboard'), 300)
-            }}
+            onClick={() => setNotice('Đăng ký Google OAuth sẽ có trong phiên bản kết nối backend. Bạn có thể nhập form dưới để trải nghiệm ngay luồng Onboarding.')}
             className="w-full py-2.5 px-4 rounded-xl border border-study-border hover:border-study-border-subtle bg-study-surface hover:bg-study-surface-muted text-xs font-semibold text-study-text flex items-center justify-center gap-2.5 transition-colors cursor-pointer shadow-2xs"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -89,19 +95,25 @@ export function Signup() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span>Đăng ký với Google</span>
+            <span>Đăng ký với Google (Demo)</span>
           </button>
+
+          {notice && (
+            <div className="p-2.5 rounded-xl bg-study-accent-soft/50 border border-study-accent/20 text-xs text-study-accent leading-relaxed">
+              {notice}
+            </div>
+          )}
 
           {/* Divider */}
           <div className="relative flex items-center justify-center">
             <div className="border-t border-study-border w-full" />
             <span className="bg-study-surface px-3 text-[11px] text-study-text-faint uppercase tracking-wider absolute">
-              hoặc
+              hoặc email
             </span>
           </div>
 
           {/* Form */}
-          <form onSubmit={submit} className="space-y-4">
+          <form onSubmit={submit} className="space-y-4 text-left">
             {/* Name Field */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-study-text">
@@ -176,6 +188,19 @@ export function Signup() {
               </div>
             </div>
 
+            {/* Terms note */}
+            <p className="text-[11px] text-study-text-muted leading-relaxed">
+              Bằng việc đăng ký, bạn đồng ý với{' '}
+              <Link to="/terms" className="text-study-primary hover:underline">
+                Điều khoản dịch vụ
+              </Link>{' '}
+              và{' '}
+              <Link to="/privacy" className="text-study-primary hover:underline">
+                Chính sách bảo mật
+              </Link>{' '}
+              của HeyMimic.
+            </p>
+
             {/* Error message */}
             {error && (
               <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
@@ -189,7 +214,7 @@ export function Signup() {
               disabled={loading}
               className="w-full py-2.5 rounded-xl bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover shadow-xs active:scale-[0.99] transition-all cursor-pointer disabled:opacity-70"
             >
-              {loading ? 'Đang khởi tạo...' : 'Tạo tài khoản miễn phí'}
+              {loading ? 'Đang khởi tạo...' : 'Tạo tài khoản và bắt đầu'}
             </button>
           </form>
 
@@ -208,3 +233,4 @@ export function Signup() {
     </div>
   )
 }
+

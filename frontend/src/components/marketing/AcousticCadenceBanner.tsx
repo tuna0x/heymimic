@@ -312,7 +312,7 @@ export function AcousticCadenceBanner() {
                   animationDelay: isPlaying ? `${(i * 0.06)}s` : undefined,
                 }}
                 className={`w-1.5 rounded-full transition-all duration-150 ${
-                  isPlaying ? 'bg-teal-600 dark:bg-teal-400 animate-waveform shadow-[0_0_10px_rgba(13,148,136,0.4)]' : 'bg-study-text-faint/30'
+                  isPlaying ? 'bg-study-primary animate-waveform shadow-[0_0_10px_rgba(15,168,184,0.4)]' : 'bg-study-text-faint/30'
                 }`}
               />
             ))}

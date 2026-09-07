@@ -333,16 +333,16 @@ export function Landing() {
 
           <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-study-surface border border-study-border shadow-2xs text-xs">
             <div className="flex -space-x-1.5 overflow-hidden">
-              <span className="inline-flex h-4.5 w-4.5 rounded-full ring-2 ring-study-surface bg-teal-600 text-white text-[8px] font-bold items-center justify-center">HN</span>
+              <span className="inline-flex h-4.5 w-4.5 rounded-full ring-2 ring-study-surface bg-study-primary text-white text-[8px] font-bold items-center justify-center">HN</span>
               <span className="inline-flex h-4.5 w-4.5 rounded-full ring-2 ring-study-surface bg-sky-500 text-white text-[8px] font-bold items-center justify-center">MT</span>
-              <span className="inline-flex h-4.5 w-4.5 rounded-full ring-2 ring-study-surface bg-teal-500 text-white text-[8px] font-bold items-center justify-center">TA</span>
+              <span className="inline-flex h-4.5 w-4.5 rounded-full ring-2 ring-study-surface bg-study-primary text-white text-[8px] font-bold items-center justify-center">TA</span>
             </div>
             <span className="text-study-text-muted text-[11px]">
               <strong className="text-study-text font-semibold">1,428 bạn</strong> đang mở mic hôm nay
             </span>
             <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-60" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-teal-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-study-primary opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-study-primary" />
             </span>
           </div>
         </div>
@@ -587,7 +587,7 @@ export function Landing() {
                     animationDelay: isPlaying ? `${i * 0.04}s` : undefined,
                   }}
                   className={`w-1 rounded-full transition-all duration-200 ${
-                    isPlaying ? 'bg-teal-600 dark:bg-teal-400 animate-waveform shadow-[0_0_8px_rgba(13,148,136,0.35)]' : 'bg-study-text-faint/40'
+                    isPlaying ? 'bg-study-primary animate-waveform shadow-[0_0_8px_rgba(15,168,184,0.35)]' : 'bg-study-text-faint/40'
                   }`}
                 />
               ))}

@@ -120,7 +120,7 @@ export function Contact() {
                   Cảm ơn bạn đã nhắn gửi!
                 </h2>
                 <p className="text-xs sm:text-sm text-study-text-muted max-w-sm leading-relaxed">
-                  Lời nhắn của bạn đã được chuyển thẳng tới hòm thư của chúng mình. HeyMimic sẽ phản hồi sớm nhất qua email của bạn.
+                  Góp ý của bạn đã được ghi nhận vào phiên thử nghiệm giao diện. Vì đây là bản demo frontend độc lập, tin nhắn chưa được gửi qua máy chủ email thật. Để trao đổi trực tiếp, bạn có thể gửi tới <span className="font-mono text-study-primary font-semibold">hello@heymimic.com</span>.
                 </p>
                 <div className="pt-4">
                   <Link

@@ -55,11 +55,11 @@ export function VocabList({ words }: { words: VocabWord[] }) {
             {/* Mastery percentage & bar */}
             <div className="hidden sm:flex flex-col items-end gap-1 w-20 shrink-0">
               <ProgressBar
-                value={word.mastery}
+                value={word.mastery ?? 0}
                 tone={word.status === 'mastered' ? 'calm' : 'signal'}
               />
               <span className="text-[10px] font-mono font-medium text-study-text-muted tabular-nums">
-                {word.mastery}%
+                {word.mastery ?? 0}%
               </span>
             </div>
 

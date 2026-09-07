@@ -182,19 +182,23 @@ export function MarketingFooter() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-study-text-faint">
-          <div className="flex items-center gap-2">
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-study-text-muted">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>© {new Date().getFullYear()} HeyMimic Studio.</span>
             <span>·</span>
-            <span className="flex items-center gap-1">
-              Được xây dựng với <Heart size={12} className="text-rose-500 fill-rose-500" /> bởi người học tiếng Anh.
-            </span>
+            <Link to="/terms" className="hover:text-study-primary transition-colors">
+              Điều khoản sử dụng
+            </Link>
+            <span>·</span>
+            <Link to="/privacy" className="hover:text-study-primary transition-colors">
+              Chính sách bảo mật
+            </Link>
           </div>
 
           {/* Real-time System Status Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-study-surface-muted border border-study-border text-[11px] font-mono text-study-text-muted">
-            <span className="w-2 h-2 rounded-full bg-study-primary animate-pulse" />
-            <span>AI Speaking Engine: Sẵn sàng 99.9%</span>
+            <span className="w-2 h-2 rounded-full bg-study-primary" />
+            <span>Chế độ thử nghiệm (Frontend Demo)</span>
           </div>
         </div>
       </div>

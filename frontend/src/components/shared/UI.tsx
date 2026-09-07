@@ -3,7 +3,7 @@ import { ArrowUpRight, Check, ChevronRight, Flame } from 'lucide-react'
 
 export function SectionLabel({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`text-[11px] font-semibold tracking-wider uppercase text-study-text-muted ${className}`}>
+    <div className={`text-xs font-medium text-study-text-muted/90 flex items-center gap-1.5 ${className}`}>
       {children}
     </div>
   )
@@ -46,17 +46,19 @@ export function StatusPill({
   )
 }
 
-export function Streak({ compact = false, className = '' }: { compact?: boolean; className?: string }) {
+export function Streak({ count, compact = false, className = '' }: { count?: number; compact?: boolean; className?: string }) {
+  const displayCount = count ?? 4
   return (
     <div className={`inline-flex items-center gap-1.5 text-study-accent ${className}`}>
       <Flame size={compact ? 15 : 18} fill="currentColor" className="shrink-0" />
       <span className={compact ? 'text-xs' : 'text-sm'}>
-        <strong className="font-bold tabular-nums mr-0.5">12</strong>
+        <strong className="font-bold tabular-nums mr-0.5">{displayCount}</strong>
         {compact ? ' ngày' : ' ngày streak'}
       </span>
     </div>
   )
 }
+
 
 export function MiniCheck({ done = false }: { done?: boolean }) {
   return (

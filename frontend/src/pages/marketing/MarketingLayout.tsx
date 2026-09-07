@@ -10,7 +10,7 @@ export function MarketingLayout() {
   const location = useLocation()
 
   return (
-    <div className="min-h-screen flex flex-col bg-study-bg text-study-text selection:bg-teal-500/20">
+    <div className="min-h-screen flex flex-col bg-study-bg text-study-text selection:bg-study-primary/20">
       <AcousticAnnouncementBanner />
       <MarketingNav />
       <main className="flex-1">

@@ -1,73 +1,81 @@
 import { create } from 'zustand'
+import {
+  applyTheme,
+  defaultProfile,
+  getInitialTheme,
+  STORAGE_KEYS,
+  ThemeMode,
+} from './storageKeys'
+import { createUiSlice, UiSlice } from './slices/createUiSlice'
+import { createProfileSlice, ProfileSlice } from './slices/createProfileSlice'
+import { createVocabSlice, VocabSlice } from './slices/createVocabSlice'
+import { createSpeakingSlice, SpeakingSlice } from './slices/createSpeakingSlice'
+import { createProgressSlice, ProgressSlice } from './slices/createProgressSlice'
+import { createEcosystemSlice, EcosystemSlice } from './slices/createEcosystemSlice'
+import { todayWords } from '../mocks/vocab'
+import { recentSessions } from '../mocks/speaking'
+import { initialMistakePatterns } from '../mocks/progress'
+import { workplaceCollocations } from '../mocks/collocations'
 
-type RecorderState = 'ready' | 'recording' | 'processing' | 'complete'
-export type ThemeMode = 'light' | 'dark'
+export type { ThemeMode }
 
-function getInitialTheme(): ThemeMode {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('mimic_theme') as ThemeMode | null
-    if (saved === 'light' || saved === 'dark') return saved
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark'
-    }
+export type MimicStore = UiSlice &
+  ProfileSlice &
+  VocabSlice &
+  SpeakingSlice &
+  ProgressSlice &
+  EcosystemSlice & {
+    resetAllDemoData: () => void
   }
-  return 'light'
-}
 
-function applyTheme(theme: ThemeMode) {
-  if (typeof document !== 'undefined') {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-    localStorage.setItem('mimic_theme', theme)
-  }
-}
-
-interface MimicStore {
-  theme: ThemeMode
-  recorderState: RecorderState
-  selectedWordId: string
-  isFlashcardFlipped: boolean
-  rememberedWords: string[]
-  setTheme: (theme: ThemeMode) => void
-  toggleTheme: () => void
-  startRecording: () => void
-  finishRecording: () => void
-  resetRecording: () => void
-  selectWord: (id: string) => void
-  flipFlashcard: () => void
-  markWord: (id: string, remembered: boolean) => void
-}
-
+// Initialize theme immediately
 const initialTheme = getInitialTheme()
 applyTheme(initialTheme)
 
-export const useMimicStore = create<MimicStore>((set) => ({
-  theme: initialTheme,
-  recorderState: 'ready',
-  selectedWordId: 'resilient',
-  isFlashcardFlipped: false,
-  rememberedWords: ['hesitate'],
-  setTheme: (theme) => {
-    applyTheme(theme)
-    set({ theme })
-  },
-  toggleTheme: () => set((state) => {
-    const nextTheme = state.theme === 'light' ? 'dark' : 'light'
-    applyTheme(nextTheme)
-    return { theme: nextTheme }
-  }),
-  startRecording: () => set({ recorderState: 'recording' }),
-  finishRecording: () => set({ recorderState: 'processing' }),
-  resetRecording: () => set({ recorderState: 'ready' }),
-  selectWord: (id) => set({ selectedWordId: id, isFlashcardFlipped: false }),
-  flipFlashcard: () => set((state) => ({ isFlashcardFlipped: !state.isFlashcardFlipped })),
-  markWord: (id, remembered) => set((state) => ({
-    rememberedWords: remembered
-      ? Array.from(new Set([...state.rememberedWords, id]))
-      : state.rememberedWords.filter((wordId) => wordId !== id),
-  })),
-}))
+// Watch system theme change if in 'system' mode
+if (typeof window !== 'undefined') {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const currentTheme = localStorage.getItem(STORAGE_KEYS.THEME) as ThemeMode | null
+    if (currentTheme === 'system') {
+      applyTheme('system')
+    }
+  })
+}
 
+export const useMimicStore = create<MimicStore>()((set, get, api) => ({
+  ...createUiSlice(set, get, api),
+  ...createProfileSlice(set, get, api),
+  ...createVocabSlice(set, get, api),
+  ...createSpeakingSlice(set, get, api),
+  ...createProgressSlice(set, get, api),
+  ...createEcosystemSlice(set, get, api),
+
+  resetAllDemoData: () => {
+    if (typeof window !== 'undefined') {
+      Object.values(STORAGE_KEYS).forEach((key) => {
+        localStorage.removeItem(key)
+      })
+      localStorage.removeItem('mimic_auth_token')
+    }
+    applyTheme('system')
+    set({
+      theme: 'system',
+      sidebarCollapsed: false,
+      profile: defaultProfile,
+      studySessions: [],
+      activeStudySession: null,
+      activeReviewSession: null,
+      activeSpeakingSession: null,
+      activePeerSession: null,
+      peerSessions: [],
+      videoAttempts: [],
+      vocabWords: todayWords,
+      speakingSessions: recentSessions,
+      mistakePatterns: initialMistakePatterns,
+      dailyActivities: [],
+      completedListeningIds: [],
+      dialogueTurns: {},
+      collocationPairs: workplaceCollocations,
+    })
+  },
+}))

@@ -1,17 +1,37 @@
 export const ROUTES = {
+  // Public & Marketing Routes
   HOME: '/',
   LOGIN: '/login',
   SIGNUP: '/signup',
+  ONBOARDING: '/onboarding',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
   ABOUT: '/about',
   SPEAKING_METHOD: '/speaking-method',
   CONTACT: '/contact',
   BLOG: '/blog',
   BLOG_POST: '/blog/:slug',
+  TERMS: '/terms',
+  PRIVACY: '/privacy',
 
   // Authenticated App Routes
   APP: '/app',
   DASHBOARD: '/dashboard',
   VOCAB: '/vocab',
+  VOCAB_REVIEW: '/vocab/review',
   SPEAKING: '/speaking',
+  SPEAKING_DIALOGUE: '/speaking/dialogue',
+  SPEAKING_HISTORY: '/speaking/history',
+  SPEAKING_SESSION_DETAIL: '/speaking/history/:sessionId',
+  SESSION_SUMMARY: '/session/:sessionId/summary',
+  LISTENING: '/listening',
+  WRITING: '/writing',
+  PEER_PRACTICE: '/peer-practice',
+  PEER_ROOM: '/peer-practice/room',
+  VIDEO_LEARNING: '/video-learning',
+  VIDEO_LAB: '/video-learning/:videoId',
   PROGRESS: '/progress',
+  MISTAKE_DETAIL: '/progress/mistakes/:mistakeId',
+  SETTINGS: '/settings',
 } as const
+

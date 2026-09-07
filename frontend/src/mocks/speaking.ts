@@ -250,6 +250,7 @@ export const todayPrompt = {
 
 export const latestSession: SpeakingSession = {
   id: 'session-04',
+  topicId: speakingTopics[0].id,
   title: speakingTopics[0].title,
   prompt: speakingTopics[0].prompt,
   duration: '01:18',
@@ -257,12 +258,23 @@ export const latestSession: SpeakingSession = {
   score: speakingTopics[0].mockResult.score,
   transcript: speakingTopics[0].mockResult.userTranscript,
   feedback: speakingTopics[0].mockResult.feedback,
+  attempts: [
+    {
+      id: 'att-01',
+      speakingSessionId: 'session-04',
+      attemptNumber: 1,
+      durationSeconds: 78,
+      audioAvailability: 'inSession',
+      createdAt: '09:42',
+    },
+  ],
 }
 
 export const recentSessions: SpeakingSession[] = [
   latestSession,
   {
     id: 'session-03',
+    topicId: speakingTopics[1].id,
     title: speakingTopics[1].title,
     prompt: speakingTopics[1].prompt,
     duration: '01:12',
@@ -270,9 +282,20 @@ export const recentSessions: SpeakingSession[] = [
     score: 82,
     transcript: speakingTopics[1].mockResult.userTranscript,
     feedback: speakingTopics[1].mockResult.feedback,
+    attempts: [
+      {
+        id: 'att-02',
+        speakingSessionId: 'session-03',
+        attemptNumber: 1,
+        durationSeconds: 72,
+        audioAvailability: 'unavailable',
+        createdAt: '20:16',
+      },
+    ],
   },
   {
     id: 'session-02',
+    topicId: speakingTopics[2].id,
     title: speakingTopics[2].title,
     prompt: speakingTopics[2].prompt,
     duration: '01:05',
@@ -280,5 +303,16 @@ export const recentSessions: SpeakingSession[] = [
     score: 79,
     transcript: speakingTopics[2].mockResult.userTranscript,
     feedback: speakingTopics[2].mockResult.feedback,
+    attempts: [
+      {
+        id: 'att-03',
+        speakingSessionId: 'session-02',
+        attemptNumber: 1,
+        durationSeconds: 65,
+        audioAvailability: 'unavailable',
+        createdAt: '15:30',
+      },
+    ],
   },
 ]
+

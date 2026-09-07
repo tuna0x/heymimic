@@ -1,8 +1,9 @@
-import { ArrowLeft, Eye, EyeOff, Lock, Mail, Zap } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Lock, Mail, Sparkles } from 'lucide-react'
 import { FormEvent, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { BrandLogo } from '../../components/shared/BrandLogo'
 import { usePageMeta } from '../../hook/usePageMeta'
+import { useAuth } from '../../context/AuthContext'
 
 export function Login() {
   usePageMeta(
@@ -10,15 +11,19 @@ export function Login() {
     'Đăng nhập vào phòng luyện nói tiếng Anh cá nhân hóa bằng AI trên HeyMimic.'
   )
 
+  const { login, loginAsSampleUser } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [notice, setNotice] = useState('')
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/dashboard'
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       return setError('Vui lòng nhập địa chỉ email hợp lệ.')
@@ -29,15 +34,25 @@ export function Login() {
 
     setLoading(true)
     setError('')
-    setTimeout(() => {
-      navigate('/dashboard')
-    }, 350)
+    try {
+      await login(email, password)
+      navigate(from, { replace: true })
+    } catch {
+      setError('Đăng nhập thất bại. Vui lòng thử lại.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const fillDemoAccount = () => {
-    setEmail('tuna@heymimic.com')
-    setPassword('HeyMimic2026')
+  const handleSampleLogin = async () => {
+    setLoading(true)
     setError('')
+    try {
+      await loginAsSampleUser()
+      navigate(from, { replace: true })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -53,7 +68,7 @@ export function Login() {
         </Link>
 
         {/* Minimalist Card */}
-        <div className="clean-card rounded-2xl p-7 sm:p-9 space-y-6 shadow-sm">
+        <div className="clean-card rounded-2xl p-7 sm:p-9 space-y-6 shadow-sm bg-study-surface border border-study-border">
           {/* Header */}
           <div className="space-y-3 text-center flex flex-col items-center">
             <BrandLogo size="md" />
@@ -67,13 +82,29 @@ export function Login() {
             </div>
           </div>
 
-          {/* 1-Click Google OAuth */}
+          {/* Quick Demo Sample Account CTA */}
+          <div className="p-3 rounded-xl bg-study-primary-soft/60 border border-study-primary-border/60 text-left space-y-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-study-primary">
+              <Sparkles size={14} />
+              <span>Thử nghiệm nhanh</span>
+            </div>
+            <p className="text-[11px] text-study-text-muted leading-relaxed">
+              Dùng thử ngay với tài khoản mẫu đã có sẵn tiến độ, lịch sử bài nói và sổ tay lỗi.
+            </p>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleSampleLogin}
+              className="w-full py-2 px-3 rounded-lg bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <span>Vào bằng tài khoản mẫu</span>
+            </button>
+          </div>
+
+          {/* Google notice */}
           <button
             type="button"
-            onClick={() => {
-              setLoading(true)
-              setTimeout(() => navigate('/dashboard'), 300)
-            }}
+            onClick={() => setNotice('Đăng nhập Google OAuth sẽ hoạt động khi kết nối backend thật ở giai đoạn sau. Hiện tại bạn có thể đăng nhập bằng email hoặc dùng Tài khoản mẫu.')}
             className="w-full py-2.5 px-4 rounded-xl border border-study-border hover:border-study-border-subtle bg-study-surface hover:bg-study-surface-muted text-xs font-semibold text-study-text flex items-center justify-center gap-2.5 transition-colors cursor-pointer shadow-2xs"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -94,19 +125,25 @@ export function Login() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span>Tiếp tục với Google</span>
+            <span>Tiếp tục với Google (Demo)</span>
           </button>
+
+          {notice && (
+            <div className="p-2.5 rounded-xl bg-study-accent-soft/50 border border-study-accent/20 text-xs text-study-accent leading-relaxed">
+              {notice}
+            </div>
+          )}
 
           {/* Divider */}
           <div className="relative flex items-center justify-center">
             <div className="border-t border-study-border w-full" />
             <span className="bg-study-surface px-3 text-[11px] text-study-text-faint uppercase tracking-wider absolute">
-              hoặc
+              hoặc email demo
             </span>
           </div>
 
           {/* Form */}
-          <form onSubmit={submit} className="space-y-4">
+          <form onSubmit={submit} className="space-y-4 text-left">
             {/* Email Field */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-study-text">
@@ -135,13 +172,12 @@ export function Login() {
                 <label className="block text-xs font-semibold text-study-text">
                   Mật khẩu
                 </label>
-                <button
-                  type="button"
-                  onClick={fillDemoAccount}
+                <Link
+                  to="/forgot-password"
                   className="text-[11px] text-study-primary hover:underline cursor-pointer"
                 >
                   Quên mật khẩu?
-                </button>
+                </Link>
               </div>
               <div className="relative">
                 <Lock
@@ -168,26 +204,17 @@ export function Login() {
               </div>
             </div>
 
-            {/* Remember Me & Demo Helper */}
+            {/* Remember Me */}
             <div className="flex items-center justify-between text-xs pt-0.5">
               <label className="flex items-center gap-2 cursor-pointer select-none text-study-text-muted hover:text-study-text">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-study-border text-study-primary accent-teal-600"
+                  className="w-3.5 h-3.5 rounded border-study-border text-study-primary accent-study-primary"
                 />
-                <span className="text-[11px]">Ghi nhớ</span>
+                <span className="text-[11px]">Ghi nhớ phiên demo</span>
               </label>
-
-              <button
-                type="button"
-                onClick={fillDemoAccount}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-study-text-muted hover:text-study-primary transition-colors cursor-pointer"
-              >
-                <Zap size={11} />
-                <span>Tài khoản mẫu</span>
-              </button>
             </div>
 
             {/* Error message */}
@@ -222,3 +249,4 @@ export function Login() {
     </div>
   )
 }
+

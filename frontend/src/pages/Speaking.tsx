@@ -1,35 +1,49 @@
 import {
-  Check,
-  Headphones,
-  Info,
-  RotateCcw,
+  Bot,
+  History,
+  Mic,
   Sparkles,
   Volume2,
-  VolumeX,
+  X,
 } from 'lucide-react'
-import { useState } from 'react'
-import { AudioPlayerBar } from '../components/speaking/AudioPlayerBar'
-import { AcousticMetrics } from '../components/speaking/AcousticMetrics'
-import { FeedbackCard } from '../components/speaking/FeedbackCard'
-import { RecordButton } from '../components/speaking/RecordButton'
-import { SentenceDiffCard } from '../components/speaking/SentenceDiffCard'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { TopicSelector } from '../components/speaking/TopicSelector'
-import { Waveform } from '../components/speaking/Waveform'
 import { SectionLabel, StatusPill } from '../components/shared/UI'
+import { AmbientSoundSelector } from '../components/speaking/AmbientSoundSelector'
+import { SentenceTransformerModal } from '../components/speaking/SentenceTransformerModal'
+import { SpeakingContextCard } from '../components/speaking/SpeakingContextCard'
+import { SpeakingStudioRecorder } from '../components/speaking/SpeakingStudioRecorder'
+import { SpeakingAnalysisSection } from '../components/speaking/SpeakingAnalysisSection'
 import { useAudioRecorder } from '../hook/useAudioRecorder'
+import { useLiveSpeechRecognition } from '../hook/useLiveSpeechRecognition'
+import { useAmbientSound } from '../hook/useAmbientSound'
 import { usePageMeta } from '../hook/usePageMeta'
 import { speakingTopics } from '../mocks/speaking'
-import type { SpeakingTopic } from '../type'
+import { useMimicStore } from '../store/useMimicStore'
+import type { SpeakingAttempt, SpeakingTopic } from '../type'
 
 export function Speaking() {
   usePageMeta(
     'Phòng Luyện Nói 60–90 Giây — HeyMimic',
-    'Phòng thu phản xạ nói tiếng Anh cá nhân hóa với AI phản hồi tức thì và phương pháp Shadowing.'
+    'Phòng thu phản xạ nói tiếng Anh cá nhân hóa với phản hồi mẫu và so sánh câu tự nhiên.'
   )
+
+  const navigate = useNavigate()
+  const activeStudySession = useMimicStore((state) => state.activeStudySession)
+  const vocabWords = useMimicStore((state) => state.vocabWords)
+  const startSpeakingSession = useMimicStore((state) => state.startSpeakingSession)
+  const addSpeakingAttempt = useMimicStore((state) => state.addSpeakingAttempt)
+  const completeSpeakingSession = useMimicStore((state) => state.completeSpeakingSession)
 
   const [activeTopic, setActiveTopic] = useState<SpeakingTopic>(speakingTopics[0])
   const [isPlayingModel, setIsPlayingModel] = useState(false)
   const [showOutline, setShowOutline] = useState(true)
+  const [practicingSentence, setPracticingSentence] = useState<string | null>(null)
+  const [sentenceAttemptDone, setSentenceAttemptDone] = useState(false)
+  const [secretMissionTarget] = useState('At the end of the day')
+  const [secretMissionDetected, setSecretMissionDetected] = useState(false)
+  const [transformingSentence, setTransformingSentence] = useState<string | null>(null)
 
   // Audio recording hook with real mic support & native TTS
   const {
@@ -46,6 +60,60 @@ export function Speaking() {
     speakNative,
     stopSpeaking,
   } = useAudioRecorder()
+
+  // Ambient sound atmosphere generator
+  const {
+    mode: ambientMode,
+    volume: ambientVolume,
+    toggleMode: toggleAmbientMode,
+    changeVolume: changeAmbientVolume,
+  } = useAmbientSound()
+
+  // Real-time speech recognition
+  const {
+    transcript: liveTranscript,
+    interimTranscript,
+    wpm: liveWpm,
+    startListening,
+    stopListening,
+    resetTranscript,
+  } = useLiveSpeechRecognition({
+    samplePhrasesFallback: activeTopic.outline,
+  })
+
+  const handleStartRecording = () => {
+    startRecording()
+    startListening()
+    setSecretMissionDetected(false)
+  }
+
+  const handleStopRecording = () => {
+    stopRecording()
+    stopListening()
+    const combined = (liveTranscript + ' ' + activeTopic.mockResult.userTranscript).toLowerCase()
+    if (combined.includes(secretMissionTarget.toLowerCase())) {
+      setSecretMissionDetected(true)
+    }
+  }
+
+  const handleResetRecording = () => {
+    resetRecording()
+    resetTranscript()
+    setSecretMissionDetected(false)
+  }
+
+  // Initialize speaking session in store if not started
+  const currentSpeakingSessionId = useMemo(() => `spk-${Date.now()}`, [])
+
+  useEffect(() => {
+    startSpeakingSession(activeTopic.id)
+  }, [activeTopic.id, startSpeakingSession])
+
+  // Track carried vocab from vocab review
+  const carriedWords = useMemo(() => {
+    if (!activeStudySession?.suggestedVocabIds) return []
+    return vocabWords.filter((w) => activeStudySession.suggestedVocabIds?.includes(w.id))
+  }, [activeStudySession, vocabWords])
 
   // Change topic handler
   const handleSelectTopic = (topic: SpeakingTopic) => {
@@ -69,38 +137,92 @@ export function Speaking() {
     }
   }
 
-  // Shadowing loop for single sentence
-  const handleSpeakSentence = (text: string) => {
-    speakNative(text)
+  // Re-practice single sentence
+  const handlePracticeSentence = (sentence: string) => {
+    setPracticingSentence(sentence)
+    setSentenceAttemptDone(false)
   }
 
-  const result = activeTopic.mockResult
+  const handleFinishSentencePractice = () => {
+    if (practicingSentence) {
+      const attempt: SpeakingAttempt = {
+        id: `att-sent-${Date.now()}`,
+        speakingSessionId: currentSpeakingSessionId,
+        attemptNumber: 2,
+        durationSeconds: 10,
+        audioAvailability: 'inSession',
+        createdAt: 'Bây giờ',
+        targetSentence: practicingSentence,
+      }
+      addSpeakingAttempt(attempt)
+    }
+    setPracticingSentence(null)
+  }
+
+  // End Session CTA
+  const handleFinishSpeaking = () => {
+    completeSpeakingSession({
+      sessionId: currentSpeakingSessionId,
+      score: activeTopic.mockResult.score,
+      transcript: activeTopic.mockResult.userTranscript,
+      feedback: activeTopic.mockResult.feedback,
+      durationSeconds: recordingTime || 78,
+    })
+
+    const targetSessionId = activeStudySession?.id ?? currentSpeakingSessionId
+    navigate(`/session/${targetSessionId}/summary`)
+  }
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+    <div className="space-y-8 max-w-5xl mx-auto pb-12 text-left">
       {/* Page Intro Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-study-border">
         <div>
-          <SectionLabel>SPEAKING AGENT · PHÒNG THU PHẢN XẠ AI</SectionLabel>
+          <SectionLabel>Phòng thu phản xạ nói</SectionLabel>
           <h1 className="text-3xl sm:text-4xl font-display font-bold text-study-text tracking-tight mt-1">
             Luyện nói không áp lực<span className="text-study-primary">.</span>
           </h1>
-          <p className="text-sm text-study-text-muted mt-1.5 max-w-lg leading-relaxed">
-            Mỗi ngày một đoạn 60–90 giây. Nói theo cách của bạn, AI sẽ bóc tách và gợi ý phiên bản tự nhiên nhất.
+          <p className="text-xs sm:text-sm text-study-text-muted mt-1.5 max-w-lg leading-relaxed">
+            Mỗi ngày một bài 60–90 giây. Nói theo cách của bạn, hệ thống đối chiếu và gợi ý phiên bản diễn đạt tự nhiên nhất.
           </p>
         </div>
 
-        <StatusPill tone={isRecording ? 'signal' : usingRealMic ? 'calm' : 'muted'}>
-          {isRecording
-            ? 'ĐANG THU ÂM...'
-            : isProcessing
-            ? 'AI ĐANG PHÂN TÍCH...'
-            : isComplete
-            ? 'ĐÃ HOÀN TẤT BÀI NÓI'
-            : usingRealMic
-            ? 'MICRO ĐÃ SẴN SÀNG'
-            : 'MIC SẴN SÀNG'}
-        </StatusPill>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <AmbientSoundSelector
+            mode={ambientMode}
+            volume={ambientVolume}
+            onToggleMode={toggleAmbientMode}
+            onChangeVolume={changeAmbientVolume}
+          />
+
+          <Link
+            to="/speaking/dialogue"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-study-primary-border/60 bg-study-primary-soft text-study-primary hover:bg-study-primary hover:text-white text-xs font-semibold transition-all shadow-xs"
+          >
+            <Bot size={14} />
+            <span>Hội thoại AI 2 chiều</span>
+          </Link>
+
+          <Link
+            to="/speaking/history"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-study-border bg-study-surface hover:bg-study-surface-hover text-xs font-semibold text-study-text-muted hover:text-study-text transition-colors"
+          >
+            <History size={14} />
+            <span>Lịch sử bài nói</span>
+          </Link>
+
+          <StatusPill tone={isRecording ? 'signal' : usingRealMic ? 'calm' : 'muted'}>
+            {isRecording
+              ? 'ĐANG THU ÂM...'
+              : isProcessing
+              ? 'ĐANG TỔNG HỢP...'
+              : isComplete
+              ? 'ĐÃ HOÀN TẤT'
+              : usingRealMic
+              ? 'MICRO SẴN SÀNG'
+              : 'MIC THIẾT BỊ'}
+          </StatusPill>
+        </div>
       </div>
 
       {/* 1. Topic & Scenario Selector */}
@@ -112,177 +234,120 @@ export function Speaking() {
       />
 
       {/* 2. Active Prompt Context & Pre-Speaking Preparation */}
-      <div className="bg-study-surface border border-study-border rounded-2xl p-6 sm:p-7 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-semibold uppercase tracking-wider text-study-primary">
-                {activeTopic.categoryLabel} · {activeTopic.level}
-              </span>
-              <span className="text-study-text-muted">·</span>
-              <span className="text-xs text-study-text-muted">Mục tiêu: 60–90 giây</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-display font-bold text-study-text mt-1">
-              {activeTopic.title}
-            </h2>
-          </div>
-
-          {/* Model Answer Audio Button */}
-          <button
-            type="button"
-            onClick={handleToggleModelSpeech}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-xs shrink-0 ${
-              isPlayingModel
-                ? 'bg-rose-500 text-white animate-pulse'
-                : 'bg-study-primary-soft text-study-primary hover:bg-study-primary hover:text-white border border-study-primary-border/60'
-            }`}
-            title="Bấm để nghe cách người bản xứ phát âm câu trả lời mẫu"
-          >
-            {isPlayingModel ? <VolumeX size={15} /> : <Headphones size={15} />}
-            <span>{isPlayingModel ? 'Dừng phát âm' : 'Nghe người bản xứ nói mẫu'}</span>
-          </button>
-        </div>
-
-        {/* Prompt description */}
-        <p className="text-xs sm:text-sm text-study-text-soft leading-relaxed bg-study-surface-muted/50 p-4 rounded-xl border border-study-border/50">
-          <strong>Bối cảnh & Đề bài: </strong>
-          {activeTopic.prompt}
-        </p>
-
-        {/* Collapsible 3-Step Outline & Key Vocab */}
-        <div className="space-y-3 pt-1">
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setShowOutline(!showOutline)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-study-text hover:text-study-primary transition-colors cursor-pointer"
-            >
-              <Info size={14} className="text-study-primary" />
-              <span>Dàn ý gợi ý & Từ vựng nên dùng</span>
-              <span className="text-[11px] text-study-text-muted font-normal">
-                ({showOutline ? 'Bấm để thu gọn' : 'Bấm để mở'})
-              </span>
-            </button>
-
-            <span className="text-[11px] text-study-text-muted italic hidden sm:inline">
-              Mẹo: Mở đầu bằng “{activeTopic.starterSentence.slice(0, 35)}...”
-            </span>
-          </div>
-
-          {showOutline && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1 animate-in fade-in duration-200">
-              {/* Outline */}
-              <div className="p-4 rounded-xl bg-study-surface-muted/30 border border-study-border space-y-2">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-study-text">
-                  DÀN Ý 3 BƯỚC NÓI TỰ NHIÊN
-                </span>
-                <ul className="space-y-1.5 text-xs text-study-text-muted">
-                  {activeTopic.outline.map((step, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-study-primary mt-1.5 shrink-0" />
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Key Vocab */}
-              <div className="p-4 rounded-xl bg-study-surface-muted/30 border border-study-border space-y-2">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-study-text">
-                  TỪ VỰNG NÊN LỒNG GHÉP
-                </span>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {activeTopic.keyVocab.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="px-2.5 py-1.5 rounded-lg bg-study-surface border border-study-border text-xs flex flex-col"
-                    >
-                      <strong className="text-study-primary font-semibold font-mono">
-                        {item.word}
-                      </strong>
-                      <span className="text-[10px] text-study-text-muted">
-                        {item.meaning}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <SpeakingContextCard
+        activeTopic={activeTopic}
+        carriedWords={carriedWords}
+        isPlayingModel={isPlayingModel}
+        showOutline={showOutline}
+        secretMissionTarget={secretMissionTarget}
+        secretMissionDetected={secretMissionDetected}
+        onToggleModelSpeech={handleToggleModelSpeech}
+        onToggleOutline={() => setShowOutline(!showOutline)}
+      />
 
       {/* 3. The Interactive Recording Stage */}
-      <div className="bg-study-surface border border-study-border rounded-2xl p-6 sm:p-10 shadow-sm flex flex-col items-center justify-center space-y-4 text-center relative overflow-hidden">
-        {/* Visualizer Waveform */}
-        <Waveform active={isRecording} liveVolume={liveVolume} />
-
-        {/* Tactile Record Button with 60-90s timer */}
-        <RecordButton
-          isRecording={isRecording}
-          isProcessing={isProcessing}
-          isComplete={isComplete}
-          recordingTime={recordingTime}
-          onStart={startRecording}
-          onStop={stopRecording}
-          onReset={resetRecording}
-          usingRealMic={usingRealMic}
-        />
-      </div>
+      <SpeakingStudioRecorder
+        isRecording={isRecording}
+        isProcessing={isProcessing}
+        isComplete={isComplete}
+        recordingTime={recordingTime}
+        liveVolume={liveVolume}
+        liveTranscript={liveTranscript}
+        interimTranscript={interimTranscript}
+        liveWpm={liveWpm}
+        usingRealMic={usingRealMic}
+        targetOutline={activeTopic.outline}
+        onStartRecording={handleStartRecording}
+        onStopRecording={handleStopRecording}
+        onResetRecording={handleResetRecording}
+      />
 
       {/* 4. Post-Recording Review & AI Evaluation */}
       {isComplete && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
-          {/* Audio Playback Bar */}
-          <AudioPlayerBar
-            audioUrl={audioUrl}
-            recordingDurationSeconds={recordingTime || 78}
-            onReRecord={resetRecording}
-          />
+        <SpeakingAnalysisSection
+          result={activeTopic.mockResult}
+          audioUrl={audioUrl}
+          recordingTime={recordingTime}
+          liveTranscript={liveTranscript}
+          onReRecord={resetRecording}
+          onTransformSentence={(s) => setTransformingSentence(s)}
+          onSpeakSentence={(t) => speakNative(t)}
+          onPracticeSentence={handlePracticeSentence}
+          onFinishSpeaking={handleFinishSpeaking}
+        />
+      )}
 
-          {/* User's Original Transcript */}
-          <div className="p-5 rounded-2xl bg-study-surface border border-study-border space-y-2 shadow-xs">
+      {/* Sentence Re-practice Modal */}
+      {practicingSentence && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-fade-in"
+            onClick={() => setPracticingSentence(null)}
+          />
+          <div className="relative z-10 w-full max-w-lg bg-study-surface border border-study-border rounded-2xl p-6 shadow-xl space-y-4 animate-scale-up text-left">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-study-primary font-mono">
-                BẢN GHI LỜI CỦA BẠN (TRANSCRIPT)
+              <span className="text-xs font-semibold text-study-primary flex items-center gap-1.5">
+                <Sparkles size={14} />
+                <span>Luyện lại câu cụ thể</span>
               </span>
-              <span className="text-[11px] text-study-text-muted">
-                {recordingTime || 78} giây · Nhận diện giọng nói tức thì
-              </span>
+              <button
+                type="button"
+                onClick={() => setPracticingSentence(null)}
+                className="p-1 rounded-lg text-study-text-muted hover:text-study-text hover:bg-study-surface-hover cursor-pointer"
+              >
+                <X size={18} />
+              </button>
             </div>
-            <p className="text-sm text-study-text italic leading-relaxed bg-study-surface-muted/50 p-4 rounded-xl border border-study-border/50">
-              “{result.userTranscript}”
+
+            <div className="p-4 rounded-xl bg-study-primary-soft/40 border border-study-primary-border/60 space-y-2">
+              <span className="text-[11px] font-semibold text-study-primary uppercase tracking-wider block">
+                Câu gợi ý bản xứ
+              </span>
+              <p className="text-sm font-medium text-study-text leading-relaxed">
+                “{practicingSentence}”
+              </p>
+              <button
+                type="button"
+                onClick={() => speakNative(practicingSentence)}
+                className="inline-flex items-center gap-1.5 text-xs text-study-primary hover:underline font-semibold cursor-pointer pt-1"
+              >
+                <Volume2 size={14} />
+                <span>Nghe lại giọng đọc mẫu</span>
+              </button>
+            </div>
+
+            <p className="text-xs text-study-text-muted">
+              Hãy bấm nút dưới để thu âm lại riêng câu này, tập trung vào ngữ điệu và các cụm từ nối.
             </p>
-          </div>
 
-          {/* 4 Multi-metric Breakdown */}
-          <AcousticMetrics
-            score={result.score}
-            fluencyScore={result.fluencyScore}
-            wpm={result.wpm}
-            cadenceScore={result.cadenceScore}
-            vocabScore={result.vocabScore}
-          />
+            <div className="flex items-center justify-between pt-3 border-t border-study-border">
+              <button
+                type="button"
+                onClick={() => setSentenceAttemptDone(true)}
+                className="px-4 py-2 rounded-xl bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover transition-colors shadow-xs cursor-pointer flex items-center gap-2"
+              >
+                <Mic size={14} />
+                <span>{sentenceAttemptDone ? 'Đã thu âm câu này' : 'Thu âm thử câu này'}</span>
+              </button>
 
-          {/* Sentence Diff & Native Rephrasing with TTS Listen Button */}
-          <SentenceDiffCard
-            rephrases={result.rephrases}
-            onSpeak={handleSpeakSentence}
-          />
-
-          {/* Detailed Grammar & Accent Nuance Feedback */}
-          <div className="space-y-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-study-primary font-mono block">
-              GỢI Ý CẢI THIỆN CHI TIẾT
-            </span>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {result.feedback.map((item) => (
-                <FeedbackCard feedback={item} key={item.id} />
-              ))}
+              <button
+                type="button"
+                onClick={handleFinishSentencePractice}
+                className="px-4 py-2 rounded-xl border border-study-border bg-study-surface text-study-text text-xs font-semibold hover:bg-study-surface-hover transition-colors cursor-pointer"
+              >
+                Xong
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Sentence Transformer Modal */}
+      <SentenceTransformerModal
+        sentence={transformingSentence || ''}
+        isOpen={Boolean(transformingSentence)}
+        onClose={() => setTransformingSentence(null)}
+      />
     </div>
   )
 }

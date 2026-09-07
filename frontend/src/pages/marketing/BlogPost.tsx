@@ -5,9 +5,37 @@ import { usePageMeta } from '../../hook/usePageMeta'
 
 export function BlogPost() {
   const { slug } = useParams()
-  const post = blogPosts.find((item) => item.slug === slug) ?? blogPosts[0]
+  const post = blogPosts.find((item) => item.slug === slug)
 
-  usePageMeta(`${post.title} — HeyMimic Studio`, post.excerpt)
+  usePageMeta(
+    post ? `${post.title} — HeyMimic Studio` : 'Không Tìm Thấy Bài Viết — HeyMimic',
+    post?.excerpt ?? 'Bài viết không tồn tại trong danh mục.'
+  )
+
+  if (!post) {
+    return (
+      <div className="max-w-xl mx-auto px-6 py-20 text-center space-y-6 animate-fade-in">
+        <div className="space-y-2">
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-study-text">
+            Không tìm thấy bài viết
+          </h1>
+          <p className="text-xs sm:text-sm text-study-text-muted leading-relaxed">
+            Đường dẫn bài viết <code className="font-mono text-study-primary font-semibold">"{slug}"</code> không tồn tại hoặc đã được chuyển hướng.
+          </p>
+        </div>
+
+        <div>
+          <Link
+            to="/blog"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover transition-colors shadow-xs"
+          >
+            <ArrowLeft size={14} />
+            <span>Quay về danh sách bài viết</span>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <article className="max-w-3xl mx-auto px-6 py-16 sm:py-24 space-y-12">

@@ -22,7 +22,7 @@ export function AcousticMetrics({
       unit: '%',
       icon: <Sparkles size={16} className="text-study-primary" />,
       evaluation: fluencyScore >= 85 ? 'Rất tự nhiên' : 'Cần bớt ngập ngừng',
-      barColor: 'bg-teal-500',
+      barColor: 'bg-study-primary',
     },
     {
       label: 'Tốc độ nói (WPM)',

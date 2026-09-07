@@ -30,17 +30,17 @@ export function AcousticWaveVisualizer() {
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative w-full max-w-2xl mx-auto my-6 p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-study-surface via-study-surface to-teal-500/5 border border-teal-500/20 shadow-sm overflow-hidden select-none transition-all duration-300 hover:border-teal-500/40 hover:shadow-lg"
+      className="relative w-full max-w-2xl mx-auto my-6 p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-study-surface via-study-surface to-study-primary/5 border border-study-primary/20 shadow-sm overflow-hidden select-none transition-all duration-300 hover:border-study-primary/40 hover:shadow-lg"
     >
       {/* Ambient Teal Glowing Core */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-40 bg-teal-500/8 rounded-full blur-3xl pointer-events-none animate-aurora" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-40 bg-study-primary/8 rounded-full blur-3xl pointer-events-none animate-aurora" />
 
       {/* Header Info */}
       <div className="relative z-10 flex items-center justify-between gap-3 text-xs mb-4">
         <div className="flex items-center gap-2 text-study-primary font-semibold">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-60" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-study-primary opacity-60" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-study-primary" />
           </span>
           <span className="font-mono uppercase tracking-wider text-[11px]">ACOUSTIC CADENCE RADAR</span>
         </div>
@@ -61,23 +61,23 @@ export function AcousticWaveVisualizer() {
           <defs>
             {/* Wave Gradient 1: Pacific Teal Primary */}
             <linearGradient id="waveGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.15" />
-              <stop offset="50%" stopColor="#0D9488" stopOpacity="0.85" />
-              <stop offset="100%" stopColor="#2DD4BF" stopOpacity="0.25" />
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.15" />
+              <stop offset="50%" stopColor="var(--primary)" stopOpacity="0.85" />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.25" />
             </linearGradient>
 
             {/* Wave Gradient 2: Soft Emerald */}
             <linearGradient id="waveGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#0F766E" stopOpacity="0.1" />
-              <stop offset="50%" stopColor="#14B8A6" stopOpacity="0.65" />
-              <stop offset="100%" stopColor="#5EEAD4" stopOpacity="0.15" />
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.1" />
+              <stop offset="50%" stopColor="var(--primary)" stopOpacity="0.65" />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.15" />
             </linearGradient>
 
             {/* Wave Gradient 3: Ethereal Teal Glow */}
             <linearGradient id="waveGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#0D9488" stopOpacity="0.08" />
-              <stop offset="50%" stopColor="#2DD4BF" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#99F6E4" stopOpacity="0.15" />
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.08" />
+              <stop offset="50%" stopColor="var(--primary)" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.15" />
             </linearGradient>
           </defs>
 
@@ -115,7 +115,7 @@ export function AcousticWaveVisualizer() {
             cx="140"
             cy={(60 + Math.sin((140 / 500) * Math.PI * 2 * 1.2 + (pulsePhase * 0.08)) * 28 * (isHovered ? 1.4 : 1.0)).toFixed(1)}
             r="4.5"
-            className="fill-teal-500 dark:fill-teal-400 animate-pulse"
+            className="fill-study-primary animate-pulse"
           />
           <circle
             cx="280"
@@ -127,7 +127,7 @@ export function AcousticWaveVisualizer() {
             cx="410"
             cy={(60 + Math.sin((410 / 500) * Math.PI * 2 * 1.2 + (pulsePhase * 0.08)) * 28 * (isHovered ? 1.4 : 1.0)).toFixed(1)}
             r="4"
-            className="fill-teal-400 animate-pulse"
+            className="fill-study-primary animate-pulse"
           />
         </svg>
       </div>
@@ -135,7 +135,7 @@ export function AcousticWaveVisualizer() {
       {/* Dynamic Voice Rhythm Badges Floating Beneath */}
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-study-border/60 text-xs">
         <div className="flex items-center gap-2">
-          <span className="px-2.5 py-1 rounded-lg bg-teal-500/10 text-study-primary font-mono text-[11px] font-bold border border-teal-500/15">
+          <span className="px-2.5 py-1 rounded-lg bg-study-primary/10 text-study-primary font-mono text-[11px] font-bold border border-study-primary/15">
             Cadence Flow
           </span>
           <span className="text-study-text-muted text-[11px]">
@@ -144,7 +144,7 @@ export function AcousticWaveVisualizer() {
         </div>
 
         <div className="flex items-center gap-1.5 text-xs text-study-text-muted">
-          <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+          <span className="w-1.5 h-1.5 rounded-full bg-study-primary" />
           <span>Di chuột để khuếch đại biên độ</span>
         </div>
       </div>

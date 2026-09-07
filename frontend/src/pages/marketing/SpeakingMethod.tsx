@@ -192,7 +192,7 @@ export function SpeakingMethod() {
                   <path
                     d="M10,50 Q100,55 180,25 T320,45 Q420,15 500,30 T590,55"
                     fill="none"
-                    stroke="#0F766E"
+                    stroke="var(--primary)"
                     strokeWidth="3.5"
                     className="transition-all duration-500"
                   />

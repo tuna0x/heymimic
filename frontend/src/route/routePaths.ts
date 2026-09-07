@@ -3,6 +3,7 @@ export const ROUTES = {
   LOGIN: '/login',
   SIGNUP: '/signup',
   ABOUT: '/about',
+  SPEAKING_METHOD: '/speaking-method',
   CONTACT: '/contact',
   BLOG: '/blog',
   BLOG_POST: '/blog/:slug',

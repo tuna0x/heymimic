@@ -1,69 +1,134 @@
-import { ArrowLeft, ArrowUpRight, Clock3 } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Check, Clock3, Headphones, Lightbulb, Share2, Sparkles } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { blogPosts } from '../../mocks/blog'
-import { usePageMeta } from './MarketingLayout'
+import { usePageMeta } from '../../hook/usePageMeta'
 
 export function BlogPost() {
   const { slug } = useParams()
   const post = blogPosts.find((item) => item.slug === slug) ?? blogPosts[0]
-  usePageMeta(post.title, post.excerpt)
+
+  usePageMeta(`${post.title} — HeyMimic Studio`, post.excerpt)
 
   return (
-    <article className="max-w-3xl mx-auto px-6 py-16 sm:py-24 space-y-10">
+    <article className="max-w-3xl mx-auto px-6 py-16 sm:py-24 space-y-12">
+      {/* Back to Blog Navigation */}
       <Link
         to="/blog"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-study-text-muted hover:text-study-text transition-colors"
+        className="inline-flex items-center gap-2 text-xs font-semibold text-study-text-muted hover:text-study-text transition-colors"
       >
         <ArrowLeft size={14} />
-        <span>Tất cả ghi chú</span>
+        <span>Quay lại tất cả ghi chú</span>
       </Link>
 
-      <header className="space-y-4 pb-8 border-b border-study-border">
-        <span className="text-xs font-semibold tracking-wider uppercase text-study-primary font-mono">
-          GHI CHÚ XÂY DỰNG · {post.date}
-        </span>
-        <h1 className="text-3xl sm:text-5xl font-display font-medium text-study-text tracking-tight leading-tight">
-          {post.title}
-        </h1>
-        <p className="text-lg text-study-text-muted leading-relaxed">
-          {post.excerpt}
-        </p>
-        <div className="flex items-center gap-3 text-xs text-study-text-muted pt-2">
-          <span className="flex items-center gap-1">
+      {/* Article Header */}
+      <header className="space-y-6 pb-8 border-b border-study-border">
+        <div className="flex flex-wrap items-center gap-2.5 text-xs">
+          <span className="px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-study-primary-soft text-study-primary border border-study-primary-border/60">
+            {post.category}
+          </span>
+          <span className="text-study-text-muted">·</span>
+          <span className="text-study-text-muted">{post.date}</span>
+          <span className="text-study-text-muted">·</span>
+          <span className="flex items-center gap-1 text-study-text-muted">
             <Clock3 size={13} /> {post.readingTime}
           </span>
-          <span>·</span>
-          <span>Bởi người xây dựng Mimic</span>
+        </div>
+
+        <h1 className="text-3xl sm:text-5xl font-display font-bold text-study-text tracking-tight leading-[1.18]">
+          {post.title}
+        </h1>
+
+        <p className="text-lg text-study-text-muted leading-relaxed font-light">
+          {post.excerpt}
+        </p>
+
+        {/* Author Card */}
+        <div className="pt-2 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-study-primary-soft text-study-primary font-bold text-xs flex items-center justify-center border border-study-primary-border/60">
+              {post.author.initials}
+            </div>
+            <div>
+              <strong className="block text-xs font-semibold text-study-text">
+                {post.author.name}
+              </strong>
+              <span className="block text-[11px] text-study-text-muted">
+                {post.author.role}
+              </span>
+            </div>
+          </div>
+
+          <div className="text-[11px] font-mono text-study-text-muted">
+            HEYMIMIC KNOWLEDGE BASE
+          </div>
         </div>
       </header>
 
-      {/* Article Content */}
+      {/* Pull Quote Highlight */}
+      {post.pullQuote && (
+        <div className="p-6 sm:p-8 rounded-3xl bg-study-primary-soft/30 border border-study-primary-border/50 text-base sm:text-lg text-study-text font-serif italic leading-relaxed text-center">
+          {post.pullQuote}
+        </div>
+      )}
+
+      {/* Main Content Paragraphs */}
       <div className="space-y-6 text-base text-study-text-soft leading-relaxed font-sans">
-        {post.content.map((paragraph, i) => (
-          <p key={i} className="text-study-text/90">
+        {post.content.map((paragraph, index) => (
+          <p key={index} className="text-study-text/90">
             {paragraph}
           </p>
         ))}
       </div>
 
-      {/* Post Ending */}
-      <div className="pt-10 border-t border-study-border flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
-          <span className="w-8 h-8 rounded-xl bg-study-primary text-white font-bold flex items-center justify-center text-sm shadow-xs">
-            m
-          </span>
-          <span className="text-xs text-study-text-muted">
-            Hẹn gặp bạn trong câu nói tiếp theo ngày mai.
-          </span>
+      {/* Key Takeaways Box */}
+      {post.keyTakeaways && post.keyTakeaways.length > 0 && (
+        <div className="clean-card p-6 sm:p-8 rounded-2xl space-y-4">
+          <div className="flex items-center gap-2 text-study-primary font-semibold text-xs uppercase tracking-wider font-mono">
+            <Lightbulb size={16} />
+            <span>ĐIỂM CỐT LÕI CẦN NHỚ</span>
+          </div>
+
+          <ul className="space-y-2.5 text-xs sm:text-sm text-study-text">
+            {post.keyTakeaways.map((tip, idx) => (
+              <li key={idx} className="flex items-start gap-2.5">
+                <span className="w-4 h-4 rounded-full bg-study-primary text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                  ✓
+                </span>
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Practice in HeyMimic CTA Box */}
+      <div className="p-8 rounded-3xl bg-study-surface border border-study-border shadow-xs flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold text-study-primary uppercase">
+            <Headphones size={15} />
+            <span>THỰC HÀNH NGAY HÔM NAY</span>
+          </div>
+          <p className="text-xs text-study-text-muted">
+            Áp dụng phương pháp này vào phiên nói 60–90 giây trên HeyMimic.
+          </p>
         </div>
 
         <Link
-          to="/signup"
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover transition-colors shadow-xs"
+          to="/dashboard"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover transition-colors shadow-xs shrink-0"
         >
-          <span>Thử practice room</span>
+          <span>Vào practice room</span>
           <ArrowUpRight size={14} />
         </Link>
+      </div>
+
+      {/* Footer Navigation */}
+      <div className="pt-8 border-t border-study-border flex items-center justify-between text-xs text-study-text-muted">
+        <Link to="/blog" className="hover:text-study-text transition-colors flex items-center gap-1.5">
+          <ArrowLeft size={13} />
+          <span>Xem các ghi chú khác</span>
+        </Link>
+        <span>HeyMimic Knowledge Base · 2026</span>
       </div>
     </article>
   )

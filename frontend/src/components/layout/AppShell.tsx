@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { useMimicStore } from '../../store/useMimicStore'
 import { Sidebar } from './Sidebar'
+import { BrandLogo } from '../shared/BrandLogo'
+import { BackToTop } from '../shared/BackToTop'
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Hôm nay',
@@ -34,7 +36,7 @@ export function AppShell() {
           />
           <div className="relative z-10 w-72 max-w-[80vw] bg-study-surface h-full shadow-2xl flex flex-col">
             <div className="p-4 border-b border-study-border flex items-center justify-between">
-              <span className="font-display font-bold text-lg text-study-text">mimic</span>
+              <BrandLogo size="sm" to="/dashboard" />
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
@@ -92,10 +94,11 @@ export function AppShell() {
         </header>
 
         {/* Dynamic Page Outlet */}
-        <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
+        <div key={location.pathname} className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-page-enter">
           <Outlet />
         </div>
       </main>
+      <BackToTop />
     </div>
   )
 }

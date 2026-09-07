@@ -1,77 +1,200 @@
-import { ArrowUpRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { ArrowUpRight, Check, Heart, Mail, Sparkles } from 'lucide-react'
+import { FormEvent, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { BrandLogo } from '../shared/BrandLogo'
 
 export function MarketingFooter() {
+  const [subscribed, setSubscribed] = useState(false)
+  const [email, setEmail] = useState('')
+  const location = useLocation()
+
+  const handleLinkClick = (to: string) => {
+    if (location.pathname === to) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const handleSubscribe = (event: FormEvent) => {
+    event.preventDefault()
+    if (!email.trim() || !email.includes('@')) return
+    setSubscribed(true)
+  }
+
   return (
-    <footer className="bg-study-surface border-t border-study-border pt-16 pb-12 text-study-text-muted">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 items-start pb-12 border-b border-study-border">
-          {/* Brand Info */}
-          <div className="md:col-span-5">
-            <Link className="inline-flex items-center gap-2.5 text-study-text font-display font-bold text-xl tracking-tight mb-4" to="/">
-              <span className="w-8 h-8 rounded-xl bg-study-primary text-white font-bold flex items-center justify-center text-base shadow-xs">
-                m
-              </span>
-              <span className="font-display">mimic</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-study-primary self-end mb-1" />
-            </Link>
+    <footer className="bg-study-surface border-t border-study-border pt-18 pb-12 text-study-text-muted mt-24">
+      <div className="max-w-6xl mx-auto px-6">
+        {/* Top Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 pb-14 border-b border-study-border">
+          {/* Brand Info & Mission */}
+          <div className="md:col-span-5 space-y-4">
+            <BrandLogo
+              size="lg"
+              onClick={() => {
+                if (location.pathname === '/') {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }
+              }}
+            />
+
             <p className="text-sm text-study-text-muted max-w-sm leading-relaxed">
-              Phòng luyện nói tiếng Anh cá nhân hóa bằng AI. Giúp bạn biến từ vựng và ngữ cảnh thực thành phản xạ nói tự nhiên, không gây mỏi mắt hay áp lực.
+              Phòng luyện nói tiếng Anh cá nhân hóa bằng AI. Giúp bạn biến từ vựng ngữ cảnh thành phản xạ giao tiếp tự nhiên trong không gian 100% riêng tư.
             </p>
+
+            {/* Newsletter Box */}
+            <div className="pt-2">
+              <span className="block text-xs font-semibold text-study-text mb-2">
+                Nhận ghi chú & phương pháp học mới nhất
+              </span>
+              {subscribed ? (
+                <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-study-success-soft text-study-success border border-study-success/30 text-xs font-medium animate-in fade-in">
+                  <Check size={14} strokeWidth={2.5} />
+                  <span>Cảm ơn bạn! HeyMimic sẽ gửi các bản tin hữu ích.</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSubscribe} className="flex items-center gap-2 max-w-sm">
+                  <div className="relative flex-1">
+                    <Mail size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-study-text-muted" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@domain.com"
+                      required
+                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-study-surface-muted/60 border border-study-border text-xs text-study-text placeholder:text-study-text-muted focus:outline-none focus:border-study-primary transition-colors"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover transition-colors shrink-0 shadow-xs cursor-pointer"
+                  >
+                    Đăng ký
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
 
-          {/* Links 1 */}
-          <div className="md:col-span-3">
-            <small className="block text-xs font-bold text-study-text-faint tracking-wider uppercase mb-4">
+          {/* Links Column 1 */}
+          <div className="md:col-span-2 space-y-3">
+            <small className="block text-xs font-mono font-bold uppercase tracking-wider text-study-text">
               KHÁM PHÁ
             </small>
-            <ul className="space-y-2.5 text-sm">
+            <ul className="space-y-2.5 text-xs">
               <li>
-                <Link to="/about" className="hover:text-study-primary transition-colors">
-                  Vì sao chọn Mimic
+                <Link
+                  to="/speaking-method"
+                  onClick={() => handleLinkClick('/speaking-method')}
+                  className="hover:text-study-primary transition-colors"
+                >
+                  Phương pháp Shadowing
                 </Link>
               </li>
               <li>
-                <Link to="/blog" className="hover:text-study-primary transition-colors">
-                  Ghi chú xây dựng
+                <Link
+                  to="/about"
+                  onClick={() => handleLinkClick('/about')}
+                  className="hover:text-study-primary transition-colors"
+                >
+                  Vì sao HeyMimic
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/blog"
+                  onClick={() => handleLinkClick('/blog')}
+                  className="hover:text-study-primary transition-colors"
+                >
+                  Ghi chú học tập
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contact"
+                  onClick={() => handleLinkClick('/contact')}
+                  className="hover:text-study-primary transition-colors"
+                >
+                  Gửi phản hồi
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Links 2 */}
-          <div className="md:col-span-4">
-            <small className="block text-xs font-bold text-study-text-faint tracking-wider uppercase mb-4">
-              BẮT ĐẦU
+          {/* Links Column 2 */}
+          <div className="md:col-span-2 space-y-3">
+            <small className="block text-xs font-mono font-bold uppercase tracking-wider text-study-text">
+              PHÒNG HỌC
             </small>
-            <ul className="space-y-2.5 text-sm">
+            <ul className="space-y-2.5 text-xs">
               <li>
-                <Link to="/signup" className="hover:text-study-primary transition-colors inline-flex items-center gap-1">
-                  <span>Tạo tài khoản miễn phí</span>
-                  <ArrowUpRight size={13} />
+                <Link
+                  to="/dashboard"
+                  onClick={() => handleLinkClick('/dashboard')}
+                  className="hover:text-study-primary transition-colors"
+                >
+                  Hôm nay
                 </Link>
               </li>
               <li>
-                <Link to="/login" className="hover:text-study-primary transition-colors">
-                  Đăng nhập
+                <Link
+                  to="/speaking"
+                  onClick={() => handleLinkClick('/speaking')}
+                  className="hover:text-study-primary transition-colors"
+                >
+                  Phòng luyện nói
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-study-primary transition-colors">
-                  Liên hệ hỗ trợ
+                <Link
+                  to="/vocab"
+                  onClick={() => handleLinkClick('/vocab')}
+                  className="hover:text-study-primary transition-colors"
+                >
+                  Bộ thẻ từ vựng
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/progress"
+                  onClick={() => handleLinkClick('/progress')}
+                  className="hover:text-study-primary transition-colors"
+                >
+                  Theo dõi nhịp học
                 </Link>
               </li>
             </ul>
+          </div>
+
+          {/* Links Column 3 */}
+          <div className="md:col-span-3 space-y-3">
+            <small className="block text-xs font-mono font-bold uppercase tracking-wider text-study-text">
+              CAM KẾT HỌC TẬP
+            </small>
+            <div className="p-3.5 rounded-2xl bg-study-surface-muted/60 border border-study-border text-xs space-y-2">
+              <div className="flex items-center gap-1.5 text-study-primary font-semibold">
+                <Sparkles size={13} />
+                <span>Không gian riêng tư 100%</span>
+              </div>
+              <p className="text-[11px] text-study-text-muted leading-relaxed">
+                Mọi dữ liệu âm thanh và bài tập nói đều thuộc quyền kiểm soát của bạn. Không ai phán xét hay xếp hạng áp lực.
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Bottom copyright */}
+        {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-study-text-faint">
-          <div>© {new Date().getFullYear()} Mimic. Xây dựng cho trải nghiệm học tập bền bỉ và tập trung.</div>
-          <div className="flex items-center gap-6">
-            <Link to="/dashboard" className="hover:text-study-text transition-colors">
-              Phòng thực hành
-            </Link>
+          <div className="flex items-center gap-2">
+            <span>© {new Date().getFullYear()} HeyMimic Studio.</span>
+            <span>·</span>
+            <span className="flex items-center gap-1">
+              Được xây dựng với <Heart size={12} className="text-rose-500 fill-rose-500" /> bởi người học tiếng Anh.
+            </span>
+          </div>
+
+          {/* Real-time System Status Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-study-surface-muted border border-study-border text-[11px] font-mono text-study-text-muted">
+            <span className="w-2 h-2 rounded-full bg-study-primary animate-pulse" />
+            <span>AI Speaking Engine: Sẵn sàng 99.9%</span>
           </div>
         </div>
       </div>

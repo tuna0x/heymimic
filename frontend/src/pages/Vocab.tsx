@@ -5,8 +5,11 @@ import { useMimicStore } from '../store/useMimicStore'
 import { FlashCard } from '../components/vocab/FlashCard'
 import { VocabList } from '../components/vocab/VocabList'
 import { SectionLabel, StatusPill } from '../components/shared/UI'
+import { usePageMeta } from '../hook/usePageMeta'
 
 export function Vocab() {
+  usePageMeta('Bộ Thẻ Từ Vựng Ngữ Cảnh — HeyMimic', 'Kho từ vựng cá nhân hóa bóc tách từ ngữ cảnh giao tiếp thực tế.')
+
   const [query, setQuery] = useState('')
   const [context, setContext] = useState('')
   const [showExtracted, setShowExtracted] = useState(false)

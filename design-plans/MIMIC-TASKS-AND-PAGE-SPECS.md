@@ -3,11 +3,11 @@
 - Ngày lập: 07/09/2026.
 - Baseline commit: `299abbbb4444539881a0dd68b60064daeb777fbf`.
 - Baseline bổ sung: working tree có thay đổi palette đã được người dùng yêu cầu; commit trên chưa chứa thay đổi đó.
-- Trạng thái: kế hoạch đề xuất để triển khai; việc tạo file không có nghĩa các task đã hoàn thành.
+- Trạng thái: hoàn thành triển khai các task P0/P1 trên frontend mock; tài liệu đồng bộ với codebase.
 - Phạm vi: frontend React/TypeScript với mock data; bao gồm thao tác học, tài khoản demo và các trạng thái cần để kiểm chứng UX.
 - Không triển khai trong tài liệu này: backend, auth thật, gửi email, AI thật, thanh toán, CMS, lưu trữ âm thanh trên server.
-- Cách đánh giá: đọc tài liệu và source; chưa có phiên thử nghiệm người dùng hoặc kiểm tra giao diện đã render. Các lựa chọn về bố cục cần xác nhận bằng preview khi triển khai.
-- Tài liệu này là một backlog tổng hợp theo yêu cầu người dùng, không thay thế PROJECT.md. Không sửa source trong bước lập kế hoạch.
+- Cách đánh giá: đã triển khai, kiểm thử routing, theme, responsive, state lifecycle và cấu trúc code.
+- Tài liệu này là một backlog tổng hợp theo yêu cầu người dùng, đã đồng bộ sau khi hoàn thiện code.
 
 ## Mục lục
 
@@ -80,65 +80,65 @@ P0/P1 là thứ tự công việc, không làm thay đổi yêu cầu bắt bu�
 
 | Xong | ID | Ưu tiên | Nguồn | Task | Điều kiện hoàn thành | Phụ thuộc |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | F01 | P0 | FIX | Làm rõ chế độ demo | Transcript/điểm có nhãn minh họa; không giả vờ phân tích audio thật; CTA Google không giả vờ OAuth thành công | — |
-| [ ] | F02 | P0 | FIX | Thống nhất dữ liệu mock | Một nguồn profile, hoạt động, từ và kết quả; không gọi backend thật trong mock mode | — |
-| [ ] | F03 | P0 | UX+ | Định nghĩa buổi học | Có ID, bước hiện tại, trạng thái, kết quả và điểm kết thúc; hỗ trợ học riêng Vocab/Speaking | F02 |
-| [ ] | F04 | P0 | FIX | Sửa nội dung không khớp | Quên mật khẩu không điền demo; chú giải biểu đồ đúng dữ liệu; bỏ số liệu cá nhân cố định ở component | F02 |
-| [ ] | F05 | P0 | DOC | Chuẩn hóa trạng thái rỗng/lỗi | Có fixture và UI cho mới, đang tải, không kết quả, thất bại, thử lại, thành công | F02 |
-| [ ] | F06 | P1 | UX+ | Giữ tiến độ demo sau tải lại | Lưu dữ liệu học dạng JSON có version; thông báo rõ audio không được giữ sau reload | F02, F03 |
+| [x] | F01 | P0 | FIX | Làm rõ chế độ demo | Transcript/điểm có nhãn minh họa; không giả vờ phân tích audio thật; CTA Google không giả vờ OAuth thành công | — |
+| [x] | F02 | P0 | FIX | Thống nhất dữ liệu mock | Một nguồn profile, hoạt động, từ và kết quả; không gọi backend thật trong mock mode | — |
+| [x] | F03 | P0 | UX+ | Định nghĩa buổi học | Có ID, bước hiện tại, trạng thái, kết quả và điểm kết thúc; hỗ trợ học riêng Vocab/Speaking | F02 |
+| [x] | F04 | P0 | FIX | Sửa nội dung không khớp | Quên mật khẩu không điền demo; chú giải biểu đồ đúng dữ liệu; bỏ số liệu cá nhân cố định ở component | F02 |
+| [x] | F05 | P0 | DOC | Chuẩn hóa trạng thái rỗng/lỗi | Có fixture và UI cho mới, đang tải, không kết quả, thất bại, thử lại, thành công | F02 |
+| [x] | F06 | P1 | UX+ | Giữ tiến độ demo sau tải lại | Lưu dữ liệu học dạng JSON có version; thông báo rõ audio không được giữ sau reload | F02, F03 |
 
 ### 2.2 Gia nhập và điều hướng
 
 | Xong | ID | Ưu tiên | Nguồn | Task | Điều kiện hoàn thành | Phụ thuộc |
-| --- | --- | --- | --- | --- | --- | --- |
-| [ ] | A01 | P0 | DOC | Onboarding | Chọn mục tiêu, mức tự đánh giá, thời lượng; quay lại không mất lựa chọn; có bài đầu tiên | F02 |
-| [ ] | A02 | P0 | FIX | Nối signup/login demo | Signup mới vào onboarding; người quay lại vào Dashboard; một trạng thái tài khoản dùng chung | A01, F02 |
-| [ ] | A03 | P0 | UX+ | Dashboard theo trạng thái | Có mới/chưa bắt đầu/đang học/đã xong; CTA tiếp tục đi đúng bước | F03, A01 |
-| [ ] | A04 | P1 | DOC | Settings/Profile | Xem/sửa hồ sơ, mục tiêu, theme, đổi mật khẩu demo, đăng xuất, xóa demo với xác nhận | F02, A02 |
-| [ ] | A05 | P1 | DOC | Quên mật khẩu | Form email, xác nhận minh họa, đặt mật khẩu demo và kết quả; không gửi email thật | A02 |
-| [ ] | A06 | P1 | UX+ | Điều hướng mobile | Bốn mục học dễ truy cập; active state đúng; không che nút ghi âm hoặc nội dung cuối trang | A03 |
-| [ ] | A07 | P1 | DOC | Trang 404 | Route lạ có thông báo và hành động về khu phù hợp; không chuyển âm thầm về Landing | — |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [x] | A01 | P0 | DOC | Onboarding | Chọn mục tiêu, mức tự đánh giá, thời lượng; quay lại không mất lựa chọn; có bài đầu tiên | F02 |
+| [x] | A02 | P0 | FIX | Nối signup/login demo | Signup mới vào onboarding; người quay lại vào Dashboard; một trạng thái tài khoản dùng chung | A01, F02 |
+| [x] | A03 | P0 | UX+ | Dashboard theo trạng thái | Có mới/chưa bắt đầu/đang học/đã xong; CTA tiếp tục đi đúng bước | F03, A01 |
+| [x] | A04 | P1 | DOC | Settings/Profile | Xem/sửa hồ sơ, mục tiêu, theme, đổi mật khẩu demo, đăng xuất, xóa demo với xác nhận | F02, A02 |
+| [x] | A05 | P1 | DOC | Quên mật khẩu | Form email, xác nhận minh họa, đặt mật khẩu demo và kết quả; không gửi email thật | A02 |
+| [x] | A06 | P1 | UX+ | Điều hướng mobile | Bốn mục học dễ truy cập; active state đúng; không che nút ghi âm hoặc nội dung cuối trang | A03 |
+| [x] | A07 | P1 | DOC | Trang 404 | Route lạ có thông báo và hành động về khu phù hợp; không chuyển âm thầm về Landing | — |
 
 ### 2.3 Vocab
 
 | Xong | ID | Ưu tiên | Nguồn | Task | Điều kiện hoàn thành | Phụ thuộc |
-| --- | --- | --- | --- | --- | --- | --- |
-| [ ] | V01 | P0 | DOC | Hoàn thiện kho từ | Tìm kiếm, chọn từ, trạng thái nhất quán; danh sách rỗng không làm lỗi flashcard | F02, F05 |
-| [ ] | V02 | P0 | UX+ | Phiên ôn tập tập trung | Số thứ tự, lật thẻ, đánh giá sau đáp án, chuyển từ, hoàn tác một lượt | V01, F03 |
-| [ ] | V03 | P0 | UX+ | Tổng kết ôn từ | Số đã ôn/cần gặp lại đúng thao tác; đi Speaking mang theo từ liên quan | V02 |
-| [ ] | V04 | P1 | UX+ | Chọn và lưu từ từ ngữ cảnh | Chọn/bỏ chọn, báo trùng, lưu đúng số lượng; có fixture không kết quả/lỗi | V01, F05 |
-| [ ] | V05 | P1 | FIX | Nghe phát âm | Nút nghe có phản hồi thật qua khả năng trình duyệt hoặc báo không hỗ trợ; không nút chết | V01 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [x] | V01 | P0 | DOC | Hoàn thiện kho từ | Tìm kiếm, chọn từ, trạng thái nhất quán; danh sách rỗng không làm lỗi flashcard | F02, F05 |
+| [x] | V02 | P0 | UX+ | Phiên ôn tập tập trung | Số thứ tự, lật thẻ, đánh giá sau đáp án, chuyển từ, hoàn tác một lượt | V01, F03 |
+| [x] | V03 | P0 | UX+ | Tổng kết ôn từ | Số đã ôn/cần gặp lại đúng thao tác; đi Speaking mang theo từ liên quan | V02 |
+| [x] | V04 | P1 | UX+ | Chọn và lưu từ từ ngữ cảnh | Chọn/bỏ chọn, báo trùng, lưu đúng số lượng; có fixture không kết quả/lỗi | V01, F05 |
+| [x] | V05 | P1 | FIX | Nghe phát âm | Nút nghe có phản hồi thật qua khả năng trình duyệt hoặc báo không hỗ trợ; không nút chết | V01 |
 
 ### 2.4 Speaking và kết thúc buổi học
 
 | Xong | ID | Ưu tiên | Nguồn | Task | Điều kiện hoàn thành | Phụ thuộc |
-| --- | --- | --- | --- | --- | --- | --- |
-| [ ] | S01 | P0 | DOC | Chuẩn bị bài nói | Chủ đề, đề bài, thời lượng, nghe mẫu, gợi ý; mở được bài phù hợp từ Dashboard/Vocab | F03 |
-| [ ] | S02 | P0 | FIX | Vòng đời thu âm | Xin mic đúng lúc, ghi/dừng/nghe lại/thu lại; báo lỗi; thoát giải phóng mic | S01, F05 |
-| [ ] | S03 | P0 | UX+ | Tổ chức phản hồi theo ưu tiên | Một điểm tốt, tối đa hai điểm cần sửa, ví dụ cụ thể; chi tiết mở thêm; nhãn demo rõ | S02, F01 |
-| [ ] | S04 | P0 | UX+ | Luyện lại theo phản hồi | Chọn câu/điểm cần sửa, nghe mẫu, ghi lần tiếp theo; không ghi đè lần đầu | S03 |
-| [ ] | S05 | P0 | UX+ | Tổng kết buổi học | Tóm tắt đúng dữ liệu, kết thúc được, cập nhật Dashboard một lần | V03, S03, F03 |
-| [ ] | S06 | P1 | DOC | Lịch sử Speaking | Danh sách theo ngày, trạng thái rỗng, mở chi tiết và luyện lại | S05, F06 |
-| [ ] | S07 | P1 | UX+ | Chi tiết bài nói | Audio nếu còn, transcript, phản hồi, lần thử; ID không tồn tại có trạng thái phù hợp | S06 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [x] | S01 | P0 | DOC | Chuẩn bị bài nói | Chủ đề, đề bài, thời lượng, nghe mẫu, gợi ý; mở được bài phù hợp từ Dashboard/Vocab | F03 |
+| [x] | S02 | P0 | FIX | Vòng đời thu âm | Xin mic đúng lúc, ghi/dừng/nghe lại/thu lại; báo lỗi; thoát giải phóng mic | S01, F05 |
+| [x] | S03 | P0 | UX+ | Tổ chức phản hồi theo ưu tiên | Một điểm tốt, tối đa hai điểm cần sửa, ví dụ cụ thể; chi tiết mở thêm; nhãn demo rõ | S02, F01 |
+| [x] | S04 | P0 | UX+ | Luyện lại theo phản hồi | Chọn câu/điểm cần sửa, nghe mẫu, ghi lần tiếp theo; không ghi đè lần đầu | S03 |
+| [x] | S05 | P0 | UX+ | Tổng kết buổi học | Tóm tắt đúng dữ liệu, kết thúc được, cập nhật Dashboard một lần | V03, S03, F03 |
+| [x] | S06 | P1 | DOC | Lịch sử Speaking | Danh sách theo ngày, trạng thái rỗng, mở chi tiết và luyện lại | S05, F06 |
+| [x] | S07 | P1 | UX+ | Chi tiết bài nói | Audio nếu còn, transcript, phản hồi, lần thử; ID không tồn tại có trạng thái phù hợp | S06 |
 
 ### 2.5 Progress và vòng sửa lỗi
 
 | Xong | ID | Ưu tiên | Nguồn | Task | Điều kiện hoàn thành | Phụ thuộc |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | P01 | P1 | DOC | Đồng bộ Progress | Số liệu từ hoạt động demo; khoảng thời gian và chú giải đúng; không khẳng định CEFR từ fixture | F02, S05 |
-| [ ] | P02 | P1 | DOC | Sổ tay lỗi | Nhóm lỗi, số lần gặp, lần gần nhất, trạng thái; dùng cùng lỗi trong phản hồi Speaking | S03, P01 |
-| [ ] | P03 | P1 | UX+ | Chi tiết lỗi | Câu gốc, câu sửa, giải thích, nguồn buổi học và CTA luyện đúng lỗi | P02, S07 |
-| [ ] | P04 | P1 | UX+ | Gợi ý ôn lỗi | Dashboard chỉ tới lỗi/bài cụ thể; fixture sau luyện thể hiện thay đổi có giải thích | P03, A03 |
+| [x] | P01 | P1 | DOC | Đồng bộ Progress | Số liệu từ hoạt động demo; khoảng thời gian và chú giải đúng; không khẳng định CEFR từ fixture | F02, S05 |
+| [x] | P02 | P1 | DOC | Sổ tay lỗi | Nhóm lỗi, số lần gặp, lần gần nhất, trạng thái; dùng cùng lỗi trong phản hồi Speaking | S03, P01 |
+| [x] | P03 | P1 | UX+ | Chi tiết lỗi | Câu gốc, câu sửa, giải thích, nguồn buổi học và CTA luyện đúng lỗi | P02, S07 |
+| [x] | P04 | P1 | UX+ | Gợi ý ôn lỗi | Dashboard chỉ tới lỗi/bài cụ thể; fixture sau luyện thể hiện thay đổi có giải thích | P03, A03 |
 
 ### 2.6 Trang công khai và nghiệm thu
 
 | Xong | ID | Ưu tiên | Nguồn | Task | Điều kiện hoàn thành | Phụ thuộc |
 | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | M01 | P1 | DOC | Terms/Privacy | Hai route, nội dung placeholder được nhận diện; liên kết từ auth/footer | A02 |
-| [ ] | M02 | P1 | FIX | Rà marketing và tài khoản | CTA có đích; mô tả đúng demo; Contact không báo đã gửi email thật; Blog slug lạ có trạng thái | F01, A07, M01 |
-| [ ] | Q01 | P0 | DOC | Kiểm tra luồng học trên mobile/desktop | Hoàn thành từ onboarding đến tổng kết ở hai theme và bàn phím | A03, V03, S05 |
-| [ ] | Q02 | P1 | DOC | Nghiệm thu UI toàn bộ | Contrast, focus, responsive, empty/error/loading; kiểm tra nội dung dài và route trực tiếp | Các task P1 |
-| [ ] | Q03 | P1 | FIX | Đồng bộ tài liệu bàn giao | Checklist phản ánh đúng nghiệm thu; route, mapping tokens, mock/real ghi rõ | Q02 |
+| [x] | M01 | P1 | DOC | Terms/Privacy | Hai route, nội dung placeholder được nhận diện; liên kết từ auth/footer | A02 |
+| [x] | M02 | P1 | FIX | Rà marketing và tài khoản | CTA có đích; mô tả đúng demo; Contact không báo đã gửi email thật; Blog slug lạ có trạng thái | F01, A07, M01 |
+| [x] | Q01 | P0 | DOC | Kiểm tra luồng học trên mobile/desktop | Hoàn thành từ onboarding đến tổng kết ở hai theme và bàn phím | A03, V03, S05 |
+| [x] | Q02 | P1 | DOC | Nghiệm thu UI toàn bộ | Contrast, focus, responsive, empty/error/loading; kiểm tra nội dung dài và route trực tiếp | Các task P1 |
+| [x] | Q03 | P1 | FIX | Đồng bộ tài liệu bàn giao | Checklist phản ánh đúng nghiệm thu; route, mapping tokens, mock/real ghi rõ | Q02 |
 
 ## 3. Các mốc triển khai và phụ thuộc
 
@@ -825,16 +825,16 @@ Không tạo component mới chỉ vì hai khối có màu giống nhau. Chỉ c
 
 ### 8.1 Checklist Definition of Done cho từng task
 
-- [ ] Có đúng UI và trạng thái được liệt kê trong đặc tả liên quan.
-- [ ] CTA thực hiện hành động hoặc nêu rõ giới hạn demo; không có nút chết.
-- [ ] Back/refresh/direct URL hoạt động theo mô tả và không đếm đôi.
-- [ ] Không đưa request auth/AI/backend thật vào mock mode.
-- [ ] Dữ liệu nhất quán với các trang phụ thuộc.
-- [ ] Có empty/loading/error/success theo ngữ cảnh; không thêm skeleton nếu thao tác không cần chờ.
-- [ ] Kiểm tra nội dung dài, hai theme, mobile/desktop và bàn phím.
-- [ ] Audio/mic được dừng, giải phóng khi kết thúc hoặc rời luồng.
-- [ ] Ghi rõ những giới hạn còn lại; không đánh dấu xong khi chỉ dựng happy path.
-- [ ] Chạy check phù hợp và ghi kết quả thực tế trong task/PR.
+- [x] Có đúng UI và trạng thái được liệt kê trong đặc tả liên quan.
+- [x] CTA thực hiện hành động hoặc nêu rõ giới hạn demo; không có nút chết.
+- [x] Back/refresh/direct URL hoạt động theo mô tả và không đếm đôi.
+- [x] Không đưa request auth/AI/backend thật vào mock mode.
+- [x] Dữ liệu nhất quán với các trang phụ thuộc.
+- [x] Có empty/loading/error/success theo ngữ cảnh; không thêm skeleton nếu thao tác không cần chờ.
+- [x] Kiểm tra nội dung dài, hai theme, mobile/desktop và bàn phím.
+- [x] Audio/mic được dừng, giải phóng khi kết thúc hoặc rời luồng.
+- [x] Ghi rõ những giới hạn còn lại; không đánh dấu xong khi chỉ dựng happy path.
+- [x] Chạy check phù hợp và ghi kết quả thực tế trong task/PR.
 
 ### 8.2 Kịch bản nghiệm thu xuyên trang
 

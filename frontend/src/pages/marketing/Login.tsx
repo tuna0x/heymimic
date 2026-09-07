@@ -1,6 +1,6 @@
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, Sparkles } from 'lucide-react'
 import { FormEvent, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { BrandLogo } from '../../components/shared/BrandLogo'
 import { usePageMeta } from '../../hook/usePageMeta'
 import { useAuth } from '../../context/AuthContext'
@@ -20,6 +20,8 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState('')
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/dashboard'
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -34,7 +36,7 @@ export function Login() {
     setError('')
     try {
       await login(email, password)
-      navigate('/dashboard')
+      navigate(from, { replace: true })
     } catch {
       setError('Đăng nhập thất bại. Vui lòng thử lại.')
     } finally {
@@ -47,7 +49,7 @@ export function Login() {
     setError('')
     try {
       await loginAsSampleUser()
-      navigate('/dashboard')
+      navigate(from, { replace: true })
     } finally {
       setLoading(false)
     }

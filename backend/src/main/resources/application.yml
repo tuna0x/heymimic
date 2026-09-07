@@ -1,0 +1,38 @@
+spring:
+  application.name: heymimic
+  profiles.default: dev
+  jpa:
+    open-in-view: false
+    hibernate.ddl-auto: validate
+    properties.hibernate.jdbc.time_zone: UTC
+  flyway.enabled: true
+server.shutdown: graceful
+management:
+  endpoints.web.exposure.include: health,info
+  endpoint.health.show-details: never
+heymimic:
+  web.allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:5173}
+  security:
+    issuer: ${SECURITY_JWT_ISSUER:heymimic}
+    audience: ${SECURITY_JWT_AUDIENCE:heymimic-web}
+    access-token-ttl: 10m
+    private-key: ${SECURITY_JWT_PRIVATE_KEY:}
+    public-key: ${SECURITY_JWT_PUBLIC_KEY:}
+  jobs:
+    enabled: ${JOBS_ENABLED:true}
+    worker-id: ${HOSTNAME:local}
+    batch-size: 10
+    lease: 120s
+    poll-interval: 2s
+    max-attempts: 5
+  events:
+    enabled: ${EVENTS_ENABLED:true}
+    worker-id: ${HOSTNAME:local}
+    batch-size: 10
+    lease: 120s
+    poll-interval: 2s
+    max-attempts: 5
+  quotas:
+    daily-limits:
+      SPEAKING_EVALUATION: 20
+      CONTEXT_ANALYSIS: 20

@@ -11,10 +11,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.time.Duration;
+import java.util.UUID;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -79,6 +82,16 @@ public class AuthController {
   ResponseEntity<Void> logout(
       @CookieValue(name = REFRESH_COOKIE, required = false) String refreshToken) {
     authentication.logout(refreshToken);
+    return ResponseEntity.noContent()
+        .header(HttpHeaders.SET_COOKIE, expiredRefreshCookie().toString())
+        .build();
+  }
+
+  @PostMapping("/change-password")
+  ResponseEntity<Void> changePassword(
+      @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ChangePasswordRequest request) {
+    authentication.changePassword(
+        UUID.fromString(jwt.getSubject()), request.currentPassword(), request.newPassword());
     return ResponseEntity.noContent()
         .header(HttpHeaders.SET_COOKIE, expiredRefreshCookie().toString())
         .build();

@@ -1,10 +1,14 @@
 import { ArrowUpRight, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { weeklyProgress } from '../../mocks/progress'
+import type { ProgressDay } from '../../type'
 
-export function WeeklyProgressWidget() {
-  const totalMinutes = weeklyProgress.reduce((sum, day) => sum + day.minutes, 0)
-  const activeDays = weeklyProgress.filter((day) => day.minutes > 0).length
+interface WeeklyProgressWidgetProps {
+  progress: ProgressDay[]
+}
+
+export function WeeklyProgressWidget({ progress }: WeeklyProgressWidgetProps) {
+  const totalMinutes = progress.reduce((sum, day) => sum + day.minutes, 0)
+  const activeDays = progress.filter((day) => day.minutes > 0).length
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -28,7 +32,7 @@ export function WeeklyProgressWidget() {
 
           {/* Weekly bar columns */}
           <div className="grid grid-cols-7 gap-3 h-28 items-end pt-2 pb-1">
-            {weeklyProgress.map((day) => (
+            {progress.map((day) => (
               <div key={day.day} className="flex flex-col items-center h-full justify-end group">
                 <div className="w-full max-w-[36px] bg-study-surface-muted rounded-lg h-full flex flex-col justify-end p-1">
                   <div

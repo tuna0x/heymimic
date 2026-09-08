@@ -7,6 +7,7 @@ export interface AudioRecorderState {
   recordingTime: number
   liveVolume: number
   audioUrl: string | null
+  audioBlob: Blob | null
   usingRealMic: boolean
   error: string | null
 }
@@ -18,6 +19,7 @@ export function useAudioRecorder() {
   const [recordingTime, setRecordingTime] = useState(0)
   const [liveVolume, setLiveVolume] = useState(0)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [usingRealMic, setUsingRealMic] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -64,28 +66,13 @@ export function useAudioRecorder() {
     animFrameRef.current = requestAnimationFrame(sampleRealMicVolume)
   }, [])
 
-  // Volume sampling simulation fallback
-  const sampleMockVolume = useCallback(() => {
-    const time = Date.now() / 200
-    // Generate organic undulating vocal speech pattern
-    const wave = Math.sin(time) * 25 + Math.sin(time * 2.3) * 20 + Math.sin(time * 0.7) * 15 + 35
-    const jitter = (Math.random() - 0.5) * 10
-    setLiveVolume(Math.max(10, Math.min(95, Math.round(wave + jitter))))
-
-    animFrameRef.current = requestAnimationFrame(sampleMockVolume)
-  }, [])
-
   // Start recording
   const startRecording = useCallback(async () => {
     setError(null)
     setIsComplete(false)
     setRecordingTime(0)
+    setAudioBlob(null)
     audioChunksRef.current = []
-
-    // Start timer interval
-    timerIntervalRef.current = window.setInterval(() => {
-      setRecordingTime((prev) => prev + 1)
-    }, 1000)
 
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -119,22 +106,27 @@ export function useAudioRecorder() {
           const mimeType = recorder.mimeType || 'audio/webm'
           const blob = new Blob(audioChunksRef.current, { type: mimeType })
           const url = URL.createObjectURL(blob)
+          setAudioBlob(blob)
           setAudioUrl(url)
+          setIsProcessing(false)
+          setIsComplete(true)
         }
 
         recorder.start(100) // Collect in 100ms chunks
+        timerIntervalRef.current = window.setInterval(() => {
+          setRecordingTime((prev) => prev + 1)
+        }, 1000)
         setIsRecording(true)
-        return
+        return true
       }
+      throw new Error('Microphone API is unavailable')
     } catch {
-      // Permission denied or no mic found -> Fallback to simulated recording seamlessly
       setUsingRealMic(false)
+      setIsRecording(false)
+      setError('Không thể truy cập microphone. Hãy cấp quyền microphone rồi thử lại.')
+      return false
     }
-
-    // Fallback mode
-    sampleMockVolume()
-    setIsRecording(true)
-  }, [sampleRealMicVolume, sampleMockVolume])
+  }, [sampleRealMicVolume])
 
   // Stop recording and process
   const stopRecording = useCallback(() => {
@@ -169,11 +161,6 @@ export function useAudioRecorder() {
       audioContextRef.current = null
     }
 
-    // Simulate AI analysis latency (1.4s)
-    setTimeout(() => {
-      setIsProcessing(false)
-      setIsComplete(true)
-    }, 1400)
   }, [isRecording])
 
   // Reset to start over
@@ -188,6 +175,7 @@ export function useAudioRecorder() {
     setRecordingTime(0)
     setLiveVolume(0)
     setAudioUrl(null)
+    setAudioBlob(null)
     setError(null)
   }, [audioUrl])
 
@@ -232,6 +220,7 @@ export function useAudioRecorder() {
     recordingTime,
     liveVolume,
     audioUrl,
+    audioBlob,
     usingRealMic,
     error,
     startRecording,

@@ -3,4 +3,6 @@ spring.datasource:
   username: ${SPRING_DATASOURCE_USERNAME:heymimic}
   password: ${SPRING_DATASOURCE_PASSWORD:heymimic_dev}
 logging.level.com.dev.heymimic: INFO
-
+heymimic.vocabulary.fake-extraction: true
+heymimic.speaking.fake-storage: true
+heymimic.speaking.fake-evaluation: true

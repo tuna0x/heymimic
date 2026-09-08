@@ -1,7 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Calendar,
   Clock,
   ExternalLink,
   History,
@@ -11,16 +10,37 @@ import {
   Sparkles,
   Trophy,
 } from 'lucide-react'
-import { useMimicStore } from '../store/useMimicStore'
 import { ROUTES } from '../route/routePaths'
 import { EmptyState } from '../components/shared/EmptyState'
+import { ApiErrorNotice } from '../components/shared/ApiErrorNotice'
 import { usePageMeta } from '../hook/usePageMeta'
+import { describeApiError, type ApiFailure } from '../service/api'
+import { speakingService } from '../service/speakingService'
+import type { SpeakingSession } from '../type'
 
 export function SpeakingHistory() {
   usePageMeta('Lịch Sử Bài Luyện Nói — HeyMimic', 'Xem lại các phiên luyện nói, bản ghi và phân tích phản hồi chi tiết.')
   const navigate = useNavigate()
-  const { speakingSessions } = useMimicStore()
+  const [speakingSessions, setSpeakingSessions] = useState<SpeakingSession[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [failure, setFailure] = useState<ApiFailure | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setLoading(true)
+    setFailure(null)
+    speakingService
+      .getSessionHistory(0, 100, controller.signal)
+      .then((page) => setSpeakingSessions(page.items))
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setFailure(describeApiError(error))
+      })
+      .finally(() => setLoading(false))
+    return () => controller.abort()
+  }, [reloadKey])
 
   const filteredSessions = speakingSessions.filter((s) => {
     if (!searchQuery.trim()) return true
@@ -53,6 +73,15 @@ export function SpeakingHistory() {
           <span>Luyện bài nói mới</span>
         </Link>
       </div>
+
+      {loading && (
+        <div role="status" className="rounded-2xl border border-study-border bg-study-surface p-5 text-xs text-study-text-muted">
+          Đang tải lịch sử bài nói…
+        </div>
+      )}
+      {failure && (
+        <ApiErrorNotice failure={failure} onRetry={() => setReloadKey((value) => value + 1)} />
+      )}
 
       {/* Filter / Search Bar */}
       {speakingSessions.length > 0 && (
@@ -87,7 +116,7 @@ export function SpeakingHistory() {
       ) : (
         <div className="space-y-3">
           {filteredSessions.map((session) => {
-            const attemptCount = session.attempts?.length ?? 1
+            const attemptCount = session.attempts?.length ?? 0
             return (
               <div
                 key={session.id}
@@ -132,7 +161,7 @@ export function SpeakingHistory() {
                       <Trophy size={14} />
                       <span>{session.score > 0 ? `${session.score}/100` : 'Đã nộp'}</span>
                     </div>
-                    <span className="text-[10px] text-study-text-muted">Điểm mẫu</span>
+                    <span className="text-[10px] text-study-text-muted">Điểm đánh giá</span>
                   </div>
 
                   <ExternalLink size={16} className="text-study-text-muted group-hover:text-study-primary transition-colors hidden sm:block" />
@@ -150,7 +179,8 @@ export function SpeakingHistory() {
           <span>Lưu ý về bản ghi âm:</span>
         </span>
         <p>
-          Bản ghi âm từ microphone của bạn chỉ được lưu tạm trong bộ nhớ trình duyệt ở phiên hiện tại để bảo vệ quyền riêng tư. Transcript mẫu và nhận xét cải thiện được lưu cục bộ để bạn theo dõi tiến bộ.
+          Bản ghi âm được lưu theo chính sách retention của hệ thống. Transcript và phản hồi vẫn còn
+          trong lịch sử sau khi audio hết hạn; đường phát audio luôn được cấp tạm thời.
         </p>
       </div>
     </div>

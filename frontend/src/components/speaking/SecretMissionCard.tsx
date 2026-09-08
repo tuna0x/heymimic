@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { Award, Flame, RefreshCw, Sparkles, Target } from 'lucide-react'
+import { Award, RefreshCw, Target } from 'lucide-react'
 
 interface SecretMissionCardProps {
-  onSelectMission?: (missionWord: string) => void
-  detectedKeyword?: boolean
+  targetPhrase: string
+  detected: boolean
+  onSelectMission: (missionWord: string) => void
 }
 
 const secretMissions = [
@@ -40,21 +40,24 @@ const secretMissions = [
 ]
 
 export function SecretMissionCard({
+  targetPhrase,
+  detected,
   onSelectMission,
-  detectedKeyword,
 }: SecretMissionCardProps) {
-  const [missionIndex, setMissionIndex] = useState(0)
+  const missionIndex = Math.max(
+    secretMissions.findIndex((mission) => mission.chunk === targetPhrase),
+    0
+  )
   const currentMission = secretMissions[missionIndex]
 
   const handleNextMission = () => {
     const nextIdx = (missionIndex + 1) % secretMissions.length
-    setMissionIndex(nextIdx)
-    onSelectMission?.(secretMissions[nextIdx].chunk)
+    onSelectMission(secretMissions[nextIdx].chunk)
   }
 
   return (
     <div className={`p-4 rounded-2xl border transition-all text-left ${
-      detectedKeyword
+      detected
         ? 'bg-emerald-500/10 border-emerald-500/40 ring-2 ring-emerald-500/20 shadow-sm'
         : 'bg-gradient-to-r from-study-accent-soft/40 via-study-surface to-study-surface border-study-accent/30 shadow-xs'
     }`}>
@@ -94,7 +97,7 @@ export function SecretMissionCard({
         </p>
       </div>
 
-      {detectedKeyword && (
+      {detected && (
         <div className="mt-3 pt-2 border-t border-emerald-500/20 flex items-center gap-2 text-xs text-emerald-500 font-semibold animate-scale-up">
           <Award size={16} />
           <span>XUẤT SẮC! Hệ thống đã nhận diện bạn sử dụng cụm từ này thành công!</span>

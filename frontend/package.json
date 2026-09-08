@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "generate:api": "openapi-typescript ../backend/openapi/openapi.json -o src/service/generated/api-schema.d.ts",
+    "check:api": "yarn generate:api && git diff --exit-code -- src/service/generated/api-schema.d.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -31,6 +33,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^10.10.0",
     "jsdom": "^26.0.0",
+    "openapi-typescript": "7.13.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.8.2",

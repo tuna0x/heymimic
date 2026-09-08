@@ -18,9 +18,11 @@ export function Login() {
   const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [notice, setNotice] = useState('')
   const navigate = useNavigate()
   const location = useLocation()
+  const [notice, setNotice] = useState(
+    (location.state as { notice?: string } | null)?.notice ?? ''
+  )
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/dashboard'
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {

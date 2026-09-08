@@ -1,5 +1,5 @@
-import { BookOpen, CheckCircle2, RotateCcw, Search, Sparkles, Volume2, X, XCircle } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { BookOpen, CheckCircle2, RotateCcw, Search, Volume2, X, XCircle } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMimicStore } from '../store/useMimicStore'
 import { FlashCard } from '../components/vocab/FlashCard'
@@ -9,18 +9,43 @@ import { EmptyState } from '../components/shared/EmptyState'
 import { SectionLabel } from '../components/shared/UI'
 import { usePageMeta } from '../hook/usePageMeta'
 import type { VocabStatus } from '../type'
+import type { VocabWord } from '../type'
+import { ApiErrorNotice } from '../components/shared/ApiErrorNotice'
+import { describeApiError, type ApiFailure } from '../service/api'
+import { vocabService } from '../service/vocabService'
 
 type FilterTab = 'all' | VocabStatus
 
 export function Vocab() {
   usePageMeta('Kho Từ Vựng — HeyMimic', 'Kho từ vựng cá nhân hóa bóc tách từ ngữ cảnh giao tiếp thực tế.')
 
-  const vocabWords = useMimicStore((state) => state.vocabWords)
-  const selectedId = useMimicStore((state) => state.selectedWordId)
-  const selectWord = useMimicStore((state) => state.selectWord)
-
+  const [vocabWords, setVocabWords] = useState<VocabWord[]>([])
+  const [selectedId, setSelectedId] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [failure, setFailure] = useState<ApiFailure | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setLoading(true)
+    setFailure(null)
+    vocabService
+      .getVocabWords({}, controller.signal)
+      .then((words) => {
+        setVocabWords(words)
+        setSelectedId((current) =>
+          words.some((word) => word.id === current) ? current : (words[0]?.id ?? '')
+        )
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setFailure(describeApiError(error))
+      })
+      .finally(() => setLoading(false))
+    return () => controller.abort()
+  }, [reloadKey])
 
   const filteredWords = useMemo(() => {
     return vocabWords.filter((word) => {
@@ -88,6 +113,15 @@ export function Vocab() {
           <span>Ôn {wordsDueCount} từ đến hạn ngay</span>
         </Link>
       </div>
+
+      {loading && (
+        <div role="status" className="rounded-2xl border border-study-border bg-study-surface p-5 text-xs text-study-text-muted">
+          Đang tải kho từ vựng…
+        </div>
+      )}
+      {failure && (
+        <ApiErrorNotice failure={failure} onRetry={() => setReloadKey((value) => value + 1)} />
+      )}
 
       {/* Section Switcher Tabs */}
       <div className="flex items-center gap-2 border-b border-study-border pb-1">
@@ -183,7 +217,11 @@ export function Vocab() {
 
               {/* List or Empty State */}
               {filteredWords.length > 0 ? (
-                <VocabList words={filteredWords} />
+                <VocabList
+                  words={filteredWords}
+                  selectedWordId={currentWord?.id}
+                  onSelectWord={setSelectedId}
+                />
               ) : (
                 <EmptyState
                   icon={BookOpen}
@@ -218,7 +256,16 @@ export function Vocab() {
           </div>
 
           {/* Context Capture Section */}
-          <ContextCapture onWordsAdded={() => setActiveTab('all')} />
+          <ContextCapture
+            onWordsAdded={(savedWords) => {
+              setVocabWords((current) => {
+                const savedIds = new Set(savedWords.map((word) => word.id))
+                return [...savedWords, ...current.filter((word) => !savedIds.has(word.id))]
+              })
+              setSelectedId(savedWords[0]?.id ?? '')
+              setActiveTab('all')
+            }}
+          />
         </div>
       )}
 

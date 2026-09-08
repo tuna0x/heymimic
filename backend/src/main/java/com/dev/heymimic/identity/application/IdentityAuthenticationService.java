@@ -116,6 +116,29 @@ public class IdentityAuthenticationService implements IdentityAuthentication {
     }
   }
 
+  @Override
+  @Transactional
+  public void changePassword(UUID userId, String currentPassword, String newPassword) {
+    UserRecord user =
+        users
+            .findById(userId)
+            .filter(value -> value.status() == UserStatus.ACTIVE)
+            .orElseThrow(this::invalidCurrentPassword);
+    if (!passwords.matches(currentPassword, user.passwordHash())) {
+      throw invalidCurrentPassword();
+    }
+    if (passwords.matches(newPassword, user.passwordHash())) {
+      throw new ApiException(
+          HttpStatus.UNPROCESSABLE_CONTENT,
+          "PASSWORD_UNCHANGED",
+          "New password must be different from the current password");
+    }
+
+    Instant now = clock.instant();
+    users.changePassword(userId, passwords.encode(newPassword), now);
+    sessions.revokeAllForUser(userId, now);
+  }
+
   private AuthTokens tokensFor(
       UserRecord user, UUID familyId, String refreshToken, Instant issuedAt) {
     IssuedAccessToken access =
@@ -154,6 +177,11 @@ public class IdentityAuthenticationService implements IdentityAuthentication {
   private ApiException invalidRefreshToken() {
     return new ApiException(
         HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "Refresh token is invalid");
+  }
+
+  private ApiException invalidCurrentPassword() {
+    return new ApiException(
+        HttpStatus.UNAUTHORIZED, "INVALID_CURRENT_PASSWORD", "Current password is invalid");
   }
 
   private static final class RefreshReuseException extends ApiException {

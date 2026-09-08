@@ -1,17 +1,14 @@
 import { Check, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import { useState } from 'react'
-import { useMimicStore } from '../../store/useMimicStore'
 import type { VocabWord } from '../../type'
 
 interface FlashCardProps {
   word: VocabWord
-  mode?: 'preview' | 'review'
   onRate?: (rating: 'remembered' | 'needsReview') => void
 }
 
-export function FlashCard({ word, mode = 'preview', onRate }: FlashCardProps) {
-  const flipped = useMimicStore((state) => state.isFlashcardFlipped)
-  const flip = useMimicStore((state) => state.flipFlashcard)
+export function FlashCard({ word, onRate }: FlashCardProps) {
+  const [flipped, setFlipped] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [speakError, setSpeakError] = useState(false)
 
@@ -105,7 +102,7 @@ export function FlashCard({ word, mode = 'preview', onRate }: FlashCardProps) {
         {/* Flip toggle button */}
         <button
           type="button"
-          onClick={flip}
+          onClick={() => setFlipped((value) => !value)}
           className="w-full mt-4 py-2.5 rounded-xl border border-study-border hover:border-study-primary/40 bg-study-surface hover:bg-study-surface-hover text-xs font-semibold text-study-text flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
         >
           <RotateCcw size={13} className="text-study-text-muted" />

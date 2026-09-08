@@ -12,6 +12,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 interface JpaIdentityEmailTokenRepository extends JpaRepository<IdentityEmailTokenEntity, UUID> {
+  void deleteByUserId(UUID userId);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<IdentityEmailTokenEntity> findByTokenHash(String tokenHash);
 

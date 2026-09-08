@@ -8,15 +8,20 @@
 
 Đọc mục 17 trước khi tạo module; mục 18–19 trước migration/business logic; mục 20–22 trước auth/worker/controller. Triển khai theo mục 24, nghiệm thu theo mục 25. Tài liệu này cho phép chuẩn bị implementation bằng fake adapter; provider, model, region và ngân sách thực tế được ghi ADR trước khi bật tích hợp.
 
-### Implementation snapshot — 2026-09-07
+### Implementation snapshot — 2026-09-08
 
 - B00 hoàn thành ở local: toolchain/profiles/Compose, V1 platform migration, Problem Details,
   security baseline, request ID, ArchUnit và Testcontainers PostgreSQL đã chạy qua Maven verify.
 - B01 core hoàn thành: job queue + JobHandler SPI, polling/retry/heartbeat/checkpoint,
   claim/lease/generation fencing, outbox + delivery riêng cho từng EventConsumer, typed idempotency
   execution và quota reserve/consume/release đã có recovery/concurrency test trên PostgreSQL 17.6.
-- Platform release hardening còn lại: audited replay, retention cleanup, worker metrics và load test
-  rộng hơn sẽ hoàn thiện cùng milestone vận hành; không chặn bắt đầu B02.
+- B11 observability slice đã có worker outcome/duration/heartbeat metrics và maintenance
+  count/failure/last-success metrics cho context analysis, review session và audio retention;
+  queue observer đã có due-count, oldest-due-job age, delivery lag và refresh-health gauges.
+  Migration V15 bổ sung partial index cho expired lease; suite unit/architecture hiện có 97 test
+  đã pass. PostgreSQL observation IT đã được viết nhưng cần Docker daemon để thực thi.
+- Platform release hardening còn lại: audited replay, restore drill, load test và release docs sẽ
+  hoàn thiện cùng milestone vận hành.
 - B02 đã bắt đầu theo vertical slice register: V2 tạo identity/learner/session/token tables; user và
   learner profile dùng Spring Data JPA; password dùng Argon2id; `GET /api/v1/auth/csrf` và
   `POST /api/v1/auth/register` đã có validation, CSRF, duplicate handling và transaction xuyên
@@ -35,7 +40,137 @@
   đổi Argon2id hash + tăng authVersion + revoke toàn bộ session trong một transaction.
 - B02 auth rate limit hoàn thành bằng PostgreSQL atomic fixed-window counter: login thất bại
   10/15 phút theo email/IP hash; forgot/resend 3/giờ theo email hash và 20/giờ theo IP hash. Vi phạm
-  trả 429 + Retry-After. B03 tiếp theo sẽ nối principal vào `/me`/onboarding và frontend adapter.
+  trả 429 + Retry-After.
+- B03 backend profile slice đã có `GET /api/v1/me`, `PATCH /api/v1/me/profile` và
+  `PUT /api/v1/me/onboarding`; ownership lấy duy nhất từ JWT subject. Profile update dùng
+  compare-and-set theo `expectedVersion`; onboarding retry cùng payload là idempotent và không tăng
+  version.
+- `POST /api/v1/auth/change-password` đã được tách khỏi public auth allowlist, kiểm tra mật khẩu
+  hiện tại, tăng `authVersion`, revoke toàn bộ session và expire refresh cookie. Unit/architecture
+  suite hiện có 19 test đã pass; integration test B03 đã được viết nhưng lần chạy local này bị chặn
+  do Docker Desktop daemon đang tắt.
+- B03 account deletion backend đã có `DELETE /api/v1/me`, trạng thái `DELETING`, revoke tức thời,
+  maintenance job, `AccountDataCleaner` SPI, drain guard, platform/learner cleaner, checkpoint từng
+  bước và tombstone không có FK. Integration scenario đã bao phủ CSRF, mật khẩu sai, token mất hiệu
+  lực và thứ tự xóa vật lý; cần Docker chạy để thực thi. Phần còn lại của milestone là frontend
+  adapter.
+- B04 đã bắt đầu với vocabulary core migration và module `vocabulary`: entity/repository JPA,
+  owner-scoped pagination/filter, `GET /api/v1/vocabulary/words`,
+  `PATCH /api/v1/vocabulary/words/{id}`, semantic duplicate key, optimistic locking và
+  vocabulary deletion cleaner. Mastery/status/schedule không cho client sửa.
+- B04 context-analysis đã có verified-email gate, `Idempotency-Key`, quota reservation,
+  transactional enqueue, polling API, result JSON versioned, deterministic fake adapter chỉ ở
+  dev/test và POST lưu 1–20 suggestions bằng semantic upsert. Job hết retry sẽ gọi final-failure
+  hook, chuyển analysis `pending` sang `failed` có điều kiện và quyết toán quota đúng một lần.
+  Expiry cleanup chạy theo batch có khóa `SKIP LOCKED`, release quota của analysis còn pending và
+  xóa payload hết hạn trong cùng transaction. Unit/architecture suite hiện có 30 test đã pass;
+  Review foundation đã có migration V6, JPA session/item stores, partial unique active session,
+  pessimistic word selection, transactional review lock, timezone/order snapshot và API
+  create/get/active có idempotency. Rating đã dùng `simple-v1`, session pessimistic lock + optimistic
+  version, conditional word/item/cursor mutation, before/after JSON snapshot và duration server cap
+  120 giây trong một transaction. Undo chỉ chấp nhận active event ngay trước cursor, khôi phục
+  before-state, đánh dấu audit `undoneAt` và rewind nguyên tử; retry được idempotent. Complete chỉ
+  chấp nhận khi mọi item có active rating, tổng hợp accepted duration, phát transactional
+  `VocabularyReviewCompleted` và nhả toàn bộ word lock. Abandon giữ rating đã áp dụng, không phát
+  completion event và cũng nhả lock; cả hai dùng expectedVersion + Idempotency-Key. Cleanup dùng
+  batch `FOR UPDATE SKIP LOCKED`, mặc định tự abandon session không hoạt động 24 giờ và nhả lock
+  trong cùng transaction.
+- B05 ledger tối thiểu đã hoàn thành: V7 tạo immutable `progress_activity_ledger`; consumer
+  `progress-activity-ledger-v1` validate `VocabularyReviewCompleted`, tính activity date theo timezone
+  snapshot và upsert chống trùng bằng cả event ID lẫn logical source/session. Consumer write và
+  fenced delivery acknowledgement cùng transaction; account deletion có progress cleaner riêng.
+  PostgreSQL IT cho V6/V7 đã viết nhưng cần Docker daemon để chạy.
+- B06 đã bắt đầu với migration V8, bốn topic seed không chứa mock result, JPA topic/session stores và
+  API topic + create/get/active/abandon session. Session snapshot toàn bộ prompt revision cùng
+  timezone, giới hạn một `IN_PROGRESS` session/user, ownership và idempotency/expectedVersion được
+  enforce phía server. V9 đã bổ sung attempt metadata/state, đánh số dưới session lock, object key do
+  server sinh, allowlist MIME, giới hạn 20 MiB và storage signing port. Create attempt idempotent trả
+  upload grant 10 phút; renew chỉ cho owned `AWAITING_UPLOAD` đúng version. Adapter dev/test dùng URL
+  `.invalid`, không giả lập upload thành công và production buộc cung cấp adapter thật. Upload-complete
+  đã verify SHA-256/size/detected MIME/duration từ storage, seal immutable object version trong
+  transaction khóa session → attempt và idempotent khi retry cùng checksum. Playback chỉ cấp URL 60
+  giây cho audio `AVAILABLE` còn retention, kèm `Cache-Control: no-store`; expired trả 410. Retention
+  scheduler xử lý batch cấu hình được: xóa versioned object trước, CAS metadata sang `DELETED` sau,
+  lỗi storage giữ record để retry và không chặn phần còn lại của batch. Phần còn lại để bật B06 trên
+  production là storage adapter thật.
+- B07 đã bắt đầu với V10 tạo evaluation/feedback schema, unique một evaluation/attempt, API evaluate
+  trả 202 + Location/Retry-After và API poll owner-scoped. Paid-work guard, retained audio, session
+  state, quota reservation, enqueue job, attempt `QUEUED` và idempotency được enforce cùng
+  transaction; key mới vẫn reuse evaluation cũ nên không thể vượt quota. STT và feedback dùng hai
+  outbound port riêng, không giữ DB transaction khi gọi provider. Worker persist transcript trước
+  khi feedback; retry tại stage `FEEDBACK` bỏ qua STT. Result schema được validate, JSON result và
+  feedback rows persist cùng attempt `COMPLETED` + quota consume sau khi khóa kiểm tra session vẫn
+  active. Final failure cập nhật cả evaluation/attempt; quota release nếu chưa authorize provider,
+  consume nếu đã authorize. Dev/test có deterministic adapter ghi rõ `source=fake`; production
+  fail-fast nếu thiếu adapter thật. History có pagination; detail chứa attempt/evaluation. Complete
+  session bắt buộc selected attempt đã evaluate, không còn evaluation queued/running, khóa session
+  và CAS expectedVersion. Duration cộng một lần cho mọi attempt evaluate thành công; transition và
+  `SpeakingSessionCompleted` outbox event commit cùng transaction. Progress consumer validate
+  event rồi ghi ledger idempotent theo ngày của timezone snapshot. Provider failure taxonomy phân
+  biệt TIMEOUT/RATE_LIMITED/UNAVAILABLE có retry với AUTHENTICATION_FAILED/REQUEST_REJECTED và
+  invalid response terminal; error code được prefix theo STT/FEEDBACK. Platform worker hỗ trợ
+  fail-final ngay, không đốt retry budget cho lỗi terminal. Suite hiện có 71 unit/architecture test
+  đã pass. B07 đã đủ contract nội bộ; adapter provider thật và timeout HTTP cụ thể được tích hợp ở
+  B10 khi chốt vendor/credentials.
+- B08 đã bắt đầu với V11 tạo `study_sessions`/`study_steps`, FK child và constraint đúng một child
+  theo kind. API create/get/active hỗ trợ đúng ba plan `[vocabulary]`, `[speaking]`,
+  `[vocabulary,speaking]`; parent, child sessions, links và mọi idempotency record commit/rollback
+  cùng transaction. Study chỉ gọi public API của child, không tạo JPA association liên module.
+  Existing active parent/independent child bị từ chối, không tự attach. Step transition chỉ tiến
+  đúng một bước khi child hiện tại completed. Complete idempotent yêu cầu mọi child completed và
+  không phát duration event; abandon giữ child completed, chỉ abandon child còn active rồi CAS
+  parent trong cùng transaction. Account cleaner xóa Study links trước progress/speaking/vocabulary.
+  Suite hiện có 80 unit/architecture test đã pass. Backend B08 đã hoàn thành; phần frontend combined
+  flow và end-to-end PostgreSQL test chờ môi trường Docker.
+- B09 đã bắt đầu với V12 tạo daily projection từ activity ledger. Review/speaking consumer chỉ cộng
+  projection khi insert ledger mới thành công và hai write cùng transaction, nên event/logical
+  source lặp không cộng duration lần hai. API `GET /progress/daily` trả chuỗi ngày dày tối đa 366
+  ngày; `GET /progress/overview` trả total minutes, streak theo timezone hiện tại, today seconds và
+  daily goal. Historical date vẫn dùng timezone snapshot của child session. V13 thêm mistake
+  pattern/occurrence từ `SpeakingEvaluationCompleted`; feedbackItemId chống trùng và unknown key
+  không bị merge theo prose. API mistake list/detail có pagination, status update dùng optimistic
+  version. Overview recommendation theo rule overdue vocabulary → active mistake → speaking topic.
+  V14 thêm versioned projection generation và internal rebuild command: build từ ledger, khóa
+  shared/exclusive đồng bộ writer với catch-up, validate tổng seconds rồi atomic switch active
+  pointer; generation cũ giữ RETIRED và generation lỗi không được serve. Suite hiện có 93
+  unit/architecture test đã pass. Backend B09 đã hoàn thành; frontend dashboard và PostgreSQL
+  concurrency execution còn chờ môi trường tích hợp.
+- B10 đã bắt đầu với core frontend transport/adapters: API client xử lý CSRF, refresh cookie và
+  chỉ retry một lần khi 401, giữ nguyên Idempotency-Key, hỗ trợ 204/non-JSON/requestId/Retry-After,
+  AbortSignal và không gắn Content-Type sai cho FormData. Auth thật đã nối login, reload /me,
+  register cần xác minh email, logout và xóa cache theo user. Vocabulary, speaking và progress
+  service đã bỏ silent mock fallback; speaking dùng create attempt → presigned upload → checksum
+  SHA-256 → complete → evaluate/poll đúng backend contract. Progress page, mistake detail và
+  Dashboard đã đọc overview/daily/mistake projection thật; update mistake gửi expectedVersion và
+  không còn localStorage write path. Transport có timeout 15 giây, phân loại riêng
+  timeout/quota/rate-limit/network và UI có loading/error/requestId/retry. Dashboard đã tạo/resume
+  Study plan thật bằng topic UUID; Vocab Review dùng server snapshot và đủ
+  rate/undo/complete/abandon với optimistic version + idempotency, đồng thời đã xóa review mutation
+  local khỏi Zustand. Speaking room đã bỏ topic/evaluation mock: tải topic và active session từ API,
+  chỉ tạo session khi bắt đầu ghi âm, gửi Blob qua presigned PUT, seal bằng SHA-256, evaluate/poll có
+  timeout/hủy, retry lỗi hiển thị rõ, complete bằng selected attempt + optimistic version, rồi complete
+  Study parent nếu đây là combined flow. Metric thiếu từ provider để null và UI không tự gán điểm;
+  source evaluation được hiển thị. Speaking history/detail đọc pagination/detail thật và playback
+  qua signed URL ngắn hạn. Session Summary tải Study trước rồi lấy Review/Speaking theo đúng child ID,
+  không còn tự complete khi mở trang và không hiển thị duration/remembered/WPM giả. Phiên chưa hoàn
+  tất được điều hướng về đúng bước hiện tại. Progress lấy tổng vocabulary và speaking session từ
+  pagination metadata thay vì mảng demo. Local Study/Speaking lifecycle mutations và session history
+  cache đã được gỡ khỏi Zustand; chỉ giữ active Study pointer để phối hợp điều hướng. Vocabulary
+  catalog tải words thật, context capture dùng start → poll → map existingWordId → save suggestion IDs,
+  giữ analysis ID khi retry và phân biệt retry analyze/save. Dashboard tải vocabulary/topic từ API;
+  Speaking lấy carried words từ review child snapshot thay vì cache. Vocab data/mutation slice đã được
+  xóa; fixture vocab/speaking không còn consumer cũng đã được loại bỏ. Ba storage key core cũ chỉ còn
+  trong cleanup để logout xóa dữ liệu từ phiên bản trước. Hiện có
+  20 API boundary regression test; toàn bộ 35 frontend test pass, production build và lint các file
+  thay đổi đều sạch.
+  OpenAPI code-first đã dùng springdoc 3.0.3:
+  contract test dựng đủ controller mà không cần DB/provider, so sánh JSON theo semantic để chặn
+  drift và export artifact tại backend/openapi. Frontend dùng openapi-typescript 7.13.0 sinh type
+  từ artifact; các service boundary đã thay DTO viết tay bằng generated type và production build
+  đã pass. Phần frontend adapter của B10 đã hoàn thành cho core flow; B10 chưa đóng vì provider/storage
+  thật trong staging còn chờ vendor, credentials và budget;
+  vendor/credentials/budget chưa được chốt nên chưa tự ý thêm adapter trả phí.
+- PostgreSQL/Testcontainers IT cho các migration đã viết nhưng vẫn cần Docker daemon để chạy.
 
 ## 1. Mục tiêu và quyết định kiến trúc
 

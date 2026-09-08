@@ -9,6 +9,7 @@ interface SpeakingContextCardProps {
   showOutline: boolean
   secretMissionTarget: string
   secretMissionDetected: boolean
+  onSelectSecretMission: (missionWord: string) => void
   onToggleModelSpeech: () => void
   onToggleOutline: () => void
 }
@@ -20,6 +21,7 @@ export function SpeakingContextCard({
   showOutline,
   secretMissionTarget,
   secretMissionDetected,
+  onSelectSecretMission,
   onToggleModelSpeech,
   onToggleOutline,
 }: SpeakingContextCardProps) {
@@ -85,6 +87,7 @@ export function SpeakingContextCard({
       <SecretMissionCard
         targetPhrase={secretMissionTarget}
         detected={secretMissionDetected}
+        onSelectMission={onSelectSecretMission}
       />
 
       {/* Outline & Key Ideas Collapsible */}

@@ -1,59 +1,88 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, CheckCircle2, Mic2, RotateCcw, Volume2, VolumeX, X } from 'lucide-react'
 import { usePageMeta } from '../hook/usePageMeta'
 import { useMimicStore } from '../store/useMimicStore'
 import { ProgressBar } from '../components/shared/UI'
+import { ApiErrorNotice } from '../components/shared/ApiErrorNotice'
+import { describeApiError, type ApiFailure } from '../service/api'
+import {
+  reviewService,
+  type ReviewSessionModel,
+} from '../service/reviewService'
+import { studyService } from '../service/studyService'
 
 export function VocabReview() {
   usePageMeta('Phiên Ôn Tập Từ Vựng — HeyMimic', 'Luyện phản xạ và ghi nhớ từ vựng qua lặp lại ngắt quãng.')
   const navigate = useNavigate()
 
-  const vocabWords = useMimicStore((state) => state.vocabWords)
-  const activeReviewSession = useMimicStore((state) => state.activeReviewSession)
   const activeStudySession = useMimicStore((state) => state.activeStudySession)
-  const startReviewSession = useMimicStore((state) => state.startReviewSession)
-  const rateCurrentWord = useMimicStore((state) => state.rateCurrentWord)
-  const undoLastReview = useMimicStore((state) => state.undoLastReview)
-  const finishReviewSession = useMimicStore((state) => state.finishReviewSession)
+  const setActiveStudySession = useMimicStore((state) => state.setActiveStudySession)
 
+  const [session, setSession] = useState<ReviewSessionModel | null>(null)
+  const [decisions, setDecisions] = useState<
+    Array<{ eventId: string; wordId: string; rating: 'remembered' | 'needsReview' }>
+  >([])
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [failure, setFailure] = useState<ApiFailure | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
+  const startKey = useRef(crypto.randomUUID())
   const [flipped, setFlipped] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [speakError, setSpeakError] = useState(false)
 
-  // Initialize or resume review session
   useEffect(() => {
-    if (!activeReviewSession || activeReviewSession.status !== 'inProgress') {
-      // Pick words due for review or first 6 words
-      const wordsToReview = vocabWords.slice(0, 6).map((w) => w.id)
-      startReviewSession(wordsToReview)
-    }
-  }, [])
+    const controller = new AbortController()
+    setLoadState('loading')
+    setFailure(null)
+    Promise.all([
+      reviewService.getActive(controller.signal),
+      studyService.getActive(controller.signal),
+    ])
+      .then(async ([activeReview, study]) => {
+        const nextReview =
+          activeReview ?? (await reviewService.start([], startKey.current))
+        setSession(nextReview)
+        setActiveStudySession(study)
+        setLoadState('ready')
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setFailure(describeApiError(error))
+        setLoadState('error')
+      })
+    return () => controller.abort()
+  }, [reloadKey, setActiveStudySession])
+
+  const vocabWords = useMemo(
+    () => session?.items.map((item) => item.word) ?? [],
+    [session]
+  )
 
   const currentWordId = useMemo(() => {
-    if (!activeReviewSession) return null
-    return activeReviewSession.wordIds[activeReviewSession.currentIndex] ?? null
-  }, [activeReviewSession])
+    if (!session) return null
+    return session.items[session.currentIndex]?.word.id ?? null
+  }, [session])
 
   const currentWord = useMemo(() => {
     if (!currentWordId) return null
     return vocabWords.find((w) => w.id === currentWordId) ?? null
   }, [currentWordId, vocabWords])
 
-  const isCompleted = activeReviewSession?.status === 'completed' || !currentWord
+  const isCompleted = Boolean(session && session.currentIndex >= session.items.length)
 
-  const totalWords = activeReviewSession?.wordIds.length ?? 0
-  const currentIndex = activeReviewSession?.currentIndex ?? 0
+  const totalWords = session?.items.length ?? 0
+  const currentIndex = session?.currentIndex ?? 0
   const progressPercent = totalWords > 0 ? (currentIndex / totalWords) * 100 : 0
 
-  const reviews = activeReviewSession?.reviews ?? []
-  const rememberedCount = reviews.filter((r) => r.rating === 'remembered').length
-  const needsReviewCount = reviews.filter((r) => r.rating === 'needsReview').length
+  const rememberedCount = decisions.filter((item) => item.rating === 'remembered').length
+  const needsReviewCount = decisions.filter((item) => item.rating === 'needsReview').length
 
   const needsReviewWords = useMemo(() => {
-    const ids = reviews.filter((r) => r.rating === 'needsReview').map((r) => r.wordId)
+    const ids = decisions.filter((item) => item.rating === 'needsReview').map((item) => item.wordId)
     return vocabWords.filter((w) => ids.includes(w.id))
-  }, [reviews, vocabWords])
+  }, [decisions, vocabWords])
 
   const speak = () => {
     if (!currentWord) return
@@ -82,33 +111,120 @@ export function VocabReview() {
     }
   }
 
-  const handleRate = (rating: 'remembered' | 'needsReview') => {
-    if (!flipped) return
-    rateCurrentWord(rating)
-    setFlipped(false)
-  }
-
-  const handleUndo = () => {
-    undoLastReview()
-    setFlipped(true)
-  }
-
-  const handleProceedToSpeaking = () => {
-    navigate('/speaking')
-  }
-
-  const handleFinishStudySession = () => {
-    if (activeStudySession) {
-      navigate(`/session/${activeStudySession.id}/summary`)
-    } else {
-      navigate('/dashboard')
+  const handleRate = async (rating: 'remembered' | 'needsReview') => {
+    if (!flipped || !session || !currentWord) return
+    setBusy(true)
+    setFailure(null)
+    try {
+      const rated = await reviewService.rate(session, rating)
+      setSession(rated.session)
+      setDecisions((items) => [
+        ...items,
+        { eventId: rated.eventId, wordId: currentWord.id, rating },
+      ])
+      setFlipped(false)
+    } catch (error) {
+      setFailure(describeApiError(error))
+    } finally {
+      setBusy(false)
     }
+  }
+
+  const handleUndo = async () => {
+    if (!session) return
+    const lastDecision = decisions[decisions.length - 1]
+    const eventId =
+      lastDecision?.eventId ??
+      [...session.items]
+        .slice(0, session.currentIndex)
+        .reverse()
+        .find((item) => item.activeRatingEventId)?.activeRatingEventId
+    if (!eventId) return
+    setBusy(true)
+    setFailure(null)
+    try {
+      setSession(await reviewService.undo(session, eventId))
+      setDecisions((items) => items.filter((item) => item.eventId !== eventId))
+      setFlipped(true)
+    } catch (error) {
+      setFailure(describeApiError(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const completeReviewAndStudyStep = async () => {
+    if (!session) return null
+    await reviewService.complete(session)
+    const study = activeStudySession ?? (await studyService.getActive())
+    if (!study) return null
+    const currentPosition =
+      study.currentStep === 'summary'
+        ? -1
+        : study.plannedSteps.indexOf(study.currentStep)
+    if (currentPosition >= 0 && currentPosition < study.plannedSteps.length - 1) {
+      const advanced = await studyService.advance(study, currentPosition + 1)
+      setActiveStudySession(advanced)
+      return advanced
+    }
+    const completed = await studyService.complete(study)
+    setActiveStudySession(completed)
+    return completed
+  }
+
+  const handleProceed = async () => {
+    setBusy(true)
+    setFailure(null)
+    try {
+      const study = await completeReviewAndStudyStep()
+      if (study?.currentStep === 'speaking') navigate('/speaking')
+      else if (study) navigate(`/session/${study.id}/summary`)
+      else navigate('/dashboard')
+    } catch (error) {
+      setFailure(describeApiError(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleExit = async () => {
+    if (!session) return navigate('/vocab')
+    setBusy(true)
+    try {
+      if (activeStudySession) {
+        await studyService.abandon(activeStudySession)
+        setActiveStudySession(null)
+      } else {
+        await reviewService.abandon(session)
+      }
+      navigate('/vocab')
+    } catch (error) {
+      setFailure(describeApiError(error))
+      setBusy(false)
+    }
+  }
+
+  if (loadState === 'loading') {
+    return (
+      <div role="status" className="mx-auto max-w-xl py-16 text-center text-sm text-study-text-muted">
+        Đang chuẩn bị phiên ôn tập…
+      </div>
+    )
+  }
+
+  if (loadState === 'error' && failure) {
+    return (
+      <div className="mx-auto max-w-xl py-12">
+        <ApiErrorNotice failure={failure} onRetry={() => setReloadKey((value) => value + 1)} />
+      </div>
+    )
   }
 
   if (isCompleted) {
     /* V03: Vocab Review Summary */
     return (
       <div className="max-w-xl mx-auto py-8 text-left space-y-6 animate-fade-in">
+        {failure && <ApiErrorNotice failure={failure} />}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-study-success-soft text-study-success flex items-center justify-center mx-auto shadow-xs">
             <CheckCircle2 size={24} />
@@ -174,7 +290,8 @@ export function VocabReview() {
         <div className="space-y-3 pt-2">
           <button
             type="button"
-            onClick={handleProceedToSpeaking}
+            disabled={busy}
+            onClick={() => void handleProceed()}
             className="w-full py-3 px-4 rounded-xl bg-study-accent text-white text-xs font-semibold hover:bg-study-accent-hover transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
           >
             <Mic2 size={16} />
@@ -184,20 +301,22 @@ export function VocabReview() {
 
           <button
             type="button"
-            onClick={handleFinishStudySession}
+            disabled={busy}
+            onClick={() => void handleUndo()}
             className="w-full py-2.5 px-4 rounded-xl bg-study-surface hover:bg-study-surface-hover border border-study-border text-xs font-semibold text-study-text transition-colors cursor-pointer"
           >
-            Hoàn thành buổi học hôm nay
+            Hoàn tác lượt đánh giá cuối
           </button>
 
           <div className="text-center pt-2">
-            <Link
-              to="/vocab"
+            <button
+              type="button"
+              onClick={() => void handleExit()}
               className="text-xs text-study-primary hover:underline font-medium inline-flex items-center gap-1"
             >
               <ArrowLeft size={13} />
               <span>Quay về kho từ vựng</span>
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -207,11 +326,13 @@ export function VocabReview() {
   /* V02: Active Card Review Mode */
   return (
     <div className="max-w-xl mx-auto py-4 text-left space-y-6 animate-fade-in">
+      {failure && <ApiErrorNotice failure={failure} />}
       {/* Top Session Bar */}
       <div className="flex items-center justify-between gap-4">
         <button
           type="button"
-          onClick={() => navigate('/vocab')}
+          disabled={busy}
+          onClick={() => void handleExit()}
           className="inline-flex items-center gap-1.5 text-xs text-study-text-muted hover:text-study-text cursor-pointer"
         >
           <X size={15} />
@@ -228,10 +349,12 @@ export function VocabReview() {
           <ProgressBar value={progressPercent} tone="calm" />
         </div>
 
-        {reviews.length > 0 ? (
+        {decisions.length > 0 ||
+        session?.items.slice(0, session.currentIndex).some((item) => item.activeRatingEventId) ? (
           <button
             type="button"
-            onClick={handleUndo}
+            disabled={busy}
+            onClick={() => void handleUndo()}
             className="inline-flex items-center gap-1 text-xs text-study-primary hover:underline cursor-pointer"
             title="Hoàn tác lượt trước"
           >
@@ -317,10 +440,10 @@ export function VocabReview() {
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            disabled={!flipped}
-            onClick={() => handleRate('needsReview')}
+            disabled={!flipped || busy}
+            onClick={() => void handleRate('needsReview')}
             className={`py-3 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              !flipped
+              !flipped || busy
                 ? 'opacity-40 cursor-not-allowed bg-study-surface border border-study-border text-study-text-muted'
                 : 'bg-study-accent-soft hover:bg-study-accent/20 border border-study-accent/30 text-study-accent shadow-xs active:scale-[0.99]'
             }`}
@@ -330,10 +453,10 @@ export function VocabReview() {
 
           <button
             type="button"
-            disabled={!flipped}
-            onClick={() => handleRate('remembered')}
+            disabled={!flipped || busy}
+            onClick={() => void handleRate('remembered')}
             className={`py-3 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              !flipped
+              !flipped || busy
                 ? 'opacity-40 cursor-not-allowed bg-study-surface border border-study-border text-study-text-muted'
                 : 'bg-study-success text-white hover:opacity-90 shadow-xs active:scale-[0.99]'
             }`}

@@ -6,3 +6,12 @@ spring:
 heymimic:
   jobs.enabled: false
   events.enabled: false
+  observability.queue-metrics.enabled: false
+  vocabulary:
+    fake-extraction: true
+    context-analysis-cleanup.enabled: false
+    review-session-cleanup.enabled: false
+  speaking:
+    fake-storage: true
+    fake-evaluation: true
+    audio-retention-cleanup.enabled: false

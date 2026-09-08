@@ -17,4 +17,6 @@ public interface EmailTokenStore {
   Optional<EmailTokenRecord> lockByHash(String tokenHash);
 
   void consume(UUID id, Instant now);
+
+  void deleteAllForUser(UUID userId);
 }

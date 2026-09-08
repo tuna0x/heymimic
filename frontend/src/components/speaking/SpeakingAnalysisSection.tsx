@@ -1,4 +1,4 @@
-import { ArrowRight, Info, Wand2 } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Wand2 } from 'lucide-react'
 import { AcousticMetrics } from './AcousticMetrics'
 import { AudioPlayerBar } from './AudioPlayerBar'
 import { FeedbackCard } from './FeedbackCard'
@@ -30,15 +30,16 @@ export function SpeakingAnalysisSection({
 }: SpeakingAnalysisSectionProps) {
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Honest Demo Notice Banner */}
+      {/* Evaluation provenance */}
       <div className="p-4 rounded-2xl bg-study-primary-soft/50 border border-study-primary-border/60 text-xs text-study-text flex items-start gap-3">
-        <Info size={18} className="text-study-primary shrink-0 mt-0.5" />
+        <CheckCircle2 size={18} className="text-study-primary shrink-0 mt-0.5" />
         <div className="space-y-1">
           <strong className="block font-semibold text-study-text">
-            Kết quả minh họa mẫu (Demo Mode)
+            Đã phân tích bản ghi âm
           </strong>
           <p className="text-study-text-muted leading-relaxed text-[11px]">
-            Bản ghi âm giọng nói của bạn đã được ghi nhận trên trình duyệt. Transcript, điểm số và gợi ý dưới đây là dữ liệu minh họa để bạn trải nghiệm cách Speaking Agent sẽ phản hồi khi kết nối API thật.
+            Transcript, điểm số và gợi ý bên dưới được trả về từ dịch vụ đánh giá
+            {result.source ? ` (${result.source})` : ''}.
           </p>
         </div>
       </div>
@@ -85,22 +86,28 @@ export function SpeakingAnalysisSection({
       />
 
       {/* Sentence Diff & Native Rephrasing with Sentence Practice Option */}
-      <SentenceDiffCard
-        rephrases={result.rephrases}
-        onSpeak={onSpeakSentence}
-        onPracticeSentence={onPracticeSentence}
-      />
+      {result.rephrases.length > 0 && (
+        <SentenceDiffCard
+          rephrases={result.rephrases}
+          onSpeak={onSpeakSentence}
+          onPracticeSentence={onPracticeSentence}
+        />
+      )}
 
       {/* Detailed Grammar & Accent Feedback */}
       <div className="space-y-3">
         <span className="text-xs font-semibold text-study-primary block">
           Gợi ý cải thiện chi tiết
         </span>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {result.feedback.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {result.feedback.map((item) => (
             <FeedbackCard feedback={item} key={item.id} />
           ))}
-        </div>
+        </div> : (
+          <p className="text-xs text-study-text-muted">
+            Dịch vụ đánh giá không ghi nhận lỗi cụ thể trong lượt nói này.
+          </p>
+        )}
       </div>
 
       {/* Final CTA: End Study Session */}

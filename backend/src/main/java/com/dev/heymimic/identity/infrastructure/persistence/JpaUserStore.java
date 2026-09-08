@@ -46,6 +46,17 @@ public class JpaUserStore implements UserStore {
     repository.findById(id).orElseThrow().changePassword(passwordHash, now);
   }
 
+  @Override
+  public void requestDeletion(UUID id, Instant now) {
+    repository.findById(id).orElseThrow().requestDeletion(now);
+  }
+
+  @Override
+  public void delete(UUID id) {
+    repository.deleteById(id);
+    repository.flush();
+  }
+
   private UserRecord toRecord(IdentityUserEntity user) {
     return new UserRecord(
         user.id(),

@@ -1,29 +1,26 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  ArrowDownRight,
   ArrowRight,
-  ArrowUpRight,
-  Award,
   BookOpen,
-  Calendar,
-  Check,
-  CheckCircle2,
   Clock,
   Filter,
   Flame,
   HelpCircle,
   Lightbulb,
   Mic2,
-  RotateCcw,
-  Sparkles,
   Trophy,
 } from 'lucide-react'
 import { useMimicStore } from '../store/useMimicStore'
 import { ROUTES } from '../route/routePaths'
 import { EmptyState } from '../components/shared/EmptyState'
+import { ApiErrorNotice } from '../components/shared/ApiErrorNotice'
 import { usePageMeta } from '../hook/usePageMeta'
 import type { MistakePattern } from '../type'
+import { describeApiError, type ApiFailure } from '../service/api'
+import { progressService, type ProgressOverview } from '../service/progressService'
+import { speakingService } from '../service/speakingService'
+import { vocabService } from '../service/vocabService'
 
 export function Progress() {
   usePageMeta(
@@ -32,13 +29,46 @@ export function Progress() {
   )
 
   const navigate = useNavigate()
-  const {
-    profile,
-    vocabWords,
-    speakingSessions,
-    mistakePatterns,
-    dailyActivities,
-  } = useMimicStore()
+  const profile = useMimicStore((state) => state.profile)
+  const [mistakePatterns, setMistakePatterns] = useState<MistakePattern[]>([])
+  const [weeklyProgress, setWeeklyProgress] = useState<
+    Awaited<ReturnType<typeof progressService.getDailyProgress>>
+  >([])
+  const [overview, setOverview] = useState<ProgressOverview | null>(null)
+  const [totalWordsLearned, setTotalWordsLearned] = useState(0)
+  const [totalSpeakingSessions, setTotalSpeakingSessions] = useState(0)
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [failure, setFailure] = useState<ApiFailure | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setLoadState('loading')
+    setFailure(null)
+
+    Promise.all([
+      progressService.getOverview(controller.signal),
+      progressService.getDailyProgress(7, controller.signal),
+      progressService.getMistakes({}, controller.signal),
+      vocabService.getVocabWordCount(controller.signal),
+      speakingService.getSessionHistory(0, 1, controller.signal),
+    ])
+      .then(([nextOverview, nextDaily, nextMistakes, wordCount, speakingHistory]) => {
+        setOverview(nextOverview)
+        setWeeklyProgress(nextDaily)
+        setMistakePatterns(nextMistakes)
+        setTotalWordsLearned(wordCount)
+        setTotalSpeakingSessions(speakingHistory.totalItems)
+        setLoadState('ready')
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setFailure(describeApiError(error))
+        setLoadState('error')
+      })
+
+    return () => controller.abort()
+  }, [reloadKey])
 
   // Tabs: 'overview' | 'mistakes'
   const [activeTab, setActiveTab] = useState<'overview' | 'mistakes'>('overview')
@@ -53,16 +83,14 @@ export function Progress() {
     return true
   })
 
-  // Dynamic Metrics
-  const totalWordsLearned = vocabWords.length
-  const totalSpeakingSessions = speakingSessions.length
-  const streakDays = profile.streakDays
-  const totalMinutes = profile.totalMinutes
+  // Projection-backed metrics
+  const streakDays = overview?.streakDays ?? 0
+  const totalMinutes = overview?.totalMinutes ?? 0
 
   // Weekly progress calculation
   // Build a 7-day window
-  const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
-  const weeklyMinutes = [15, 20, 10, 25, 12, 18, Math.min(45, Math.round(totalMinutes % 30 + 10))]
+  const daysOfWeek = weeklyProgress.map((day) => day.day.replace('.', ''))
+  const weeklyMinutes = weeklyProgress.map((day) => day.minutes)
   const maxMinutes = Math.max(...weeklyMinutes, 30)
 
   const categoryLabels: Record<MistakePattern['category'], string> = {
@@ -113,6 +141,25 @@ export function Progress() {
           </button>
         </div>
       </div>
+
+      {loadState === 'loading' && (
+        <div
+          role="status"
+          className="rounded-2xl border border-study-border bg-study-surface p-4 text-xs text-study-text-muted"
+        >
+          Đang đồng bộ tiến độ mới nhất…
+        </div>
+      )}
+
+      {loadState === 'error' && failure && (
+        <ApiErrorNotice failure={failure} onRetry={() => setReloadKey((value) => value + 1)} />
+      )}
+
+      {overview?.pendingProjection && (
+        <div className="rounded-xl border border-study-primary-border/50 bg-study-primary-soft/40 px-4 py-3 text-xs text-study-text-muted">
+          Dữ liệu mới đang được tổng hợp. Các con số sẽ tự cập nhật ở lần tải tiếp theo.
+        </div>
+      )}
 
       {/* Main Tab Navigation */}
       <div className="flex items-center gap-2 border-b border-study-border pb-1">
@@ -262,7 +309,7 @@ export function Progress() {
                   <span className="w-2 h-2 rounded-full bg-study-primary" />
                   <span>Tổng thời gian học thực tế</span>
                 </span>
-                <span>Mục tiêu: {profile.dailyMinutesGoal ?? 10} phút/ngày</span>
+                <span>Mục tiêu: {overview?.dailyGoalMinutes ?? profile.dailyMinutesGoal} phút/ngày</span>
               </div>
             </div>
 

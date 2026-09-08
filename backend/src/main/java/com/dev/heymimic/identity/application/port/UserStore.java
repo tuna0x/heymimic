@@ -16,4 +16,8 @@ public interface UserStore {
   void markVerified(UUID id, Instant now);
 
   void changePassword(UUID id, String passwordHash, Instant now);
+
+  void requestDeletion(UUID id, Instant now);
+
+  void delete(UUID id);
 }

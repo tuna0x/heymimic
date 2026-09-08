@@ -13,6 +13,7 @@ export interface VocabWord {
   color?: 'coral' | 'teal' | 'cream'
   sourceContext?: string
   nextReviewAt?: string
+  version?: number
 }
 
 export interface ContextSuggestion {
@@ -45,16 +46,18 @@ export interface SpeakingTopic {
   outline: string[]
   keyVocab: { word: string; meaning: string }[]
   modelAnswer: string
-  mockResult: {
-    score: number
-    fluencyScore: number
-    wpm: number
-    cadenceScore: number
-    vocabScore: number
-    userTranscript: string
-    feedback: AgentFeedback[]
-    rephrases: { original: string; native: string; explanation: string }[]
-  }
+}
+
+export interface SpeakingResult {
+  score: number
+  fluencyScore?: number
+  wpm?: number
+  cadenceScore?: number
+  vocabScore?: number
+  userTranscript: string
+  feedback: AgentFeedback[]
+  rephrases: { original: string; native: string; explanation: string }[]
+  source?: string
 }
 
 export interface SpeakingAttempt {
@@ -130,6 +133,7 @@ export interface StudySession {
   reviewSessionId?: string
   speakingSessionId?: string
   suggestedVocabIds?: string[]
+  version?: number
 }
 
 export interface ProgressDay {
@@ -169,6 +173,7 @@ export interface MistakePattern {
   occurrences: MistakeOccurrence[]
   recommendedTopicId?: string
   exampleSentence?: string
+  version?: number
 }
 
 export interface DailyActivity {

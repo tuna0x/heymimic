@@ -168,7 +168,9 @@ export interface MistakePattern {
   category: 'grammar' | 'vocabulary' | 'expression' | 'pronunciation'
   title: string
   explanation: string
-  status: 'needsPractice' | 'improving' | 'mastered'
+  /** Server-owned notebook lifecycle. Evidence progress is tracked separately. */
+  status: 'active' | 'resolved' | 'ignored'
+  evidenceStage?: 'notPracticed' | 'practicing' | 'improving' | 'demonstrated'
   count: number
   occurrences: MistakeOccurrence[]
   recommendedTopicId?: string
@@ -399,6 +401,7 @@ export interface VideoShadowingAttempt {
   segmentId: string
   audioUrl?: string
   score: number
+  source: 'demo' | 'provider'
   feedback: string
   createdAt: string
 }

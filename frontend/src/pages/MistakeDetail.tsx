@@ -101,9 +101,16 @@ export function MistakeDetail() {
   }
 
   const statusLabels: Record<MistakePattern['status'], { label: string; color: string }> = {
-    needsPractice: { label: 'Cần luyện', color: 'bg-rose-500/10 text-rose-600 border-rose-500/20' },
-    improving: { label: 'Đang cải thiện', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-    mastered: { label: 'Đã làm chủ', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+    active: { label: 'Đang theo dõi', color: 'bg-rose-500/10 text-rose-600 border-rose-500/20' },
+    resolved: { label: 'Đã xử lý', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+    ignored: { label: 'Đã ẩn', color: 'bg-study-surface-muted text-study-text-muted border-study-border' },
+  }
+
+  const evidenceStageLabels: Record<NonNullable<MistakePattern['evidenceStage']>, string> = {
+    notPracticed: 'Chưa có lượt nói lại',
+    practicing: 'Đang luyện lại',
+    improving: 'Đang cải thiện',
+    demonstrated: 'Đã thể hiện ở nhiều ngữ cảnh',
   }
 
   const primaryOccurrence = pattern.occurrences?.[0]
@@ -149,10 +156,6 @@ export function MistakeDetail() {
   const handlePracticeSubmit = () => {
     if (selectedOption === null) return
     setHasSubmittedPractice(true)
-    const isCorrect = practiceOptions[selectedOption]?.isCorrect
-    if (isCorrect && pattern.status === 'needsPractice') {
-      void updateStatus('improving')
-    }
   }
 
   const isCurrentSelectionCorrect =
@@ -188,23 +191,23 @@ export function MistakeDetail() {
           </div>
 
           <div className="flex items-center gap-2">
-            {pattern.status !== 'mastered' ? (
+            {pattern.status !== 'resolved' ? (
               <button
                 type="button"
                 disabled={updating}
-                onClick={() => void updateStatus('mastered')}
+                onClick={() => void updateStatus('resolved')}
                 className="px-3 py-1.5 rounded-lg border border-study-border text-xs font-semibold text-study-text hover:bg-study-surface-hover transition-colors cursor-pointer"
               >
-                Đánh dấu đã làm chủ
+                Đánh dấu đã xử lý
               </button>
             ) : (
               <button
                 type="button"
                 disabled={updating}
-                onClick={() => void updateStatus('improving')}
+                onClick={() => void updateStatus('active')}
                 className="px-3 py-1.5 rounded-lg border border-study-border text-xs font-semibold text-study-text hover:bg-study-surface-hover transition-colors cursor-pointer"
               >
-                Đưa về đang luyện
+                Đưa về đang theo dõi
               </button>
             )}
 
@@ -224,7 +227,7 @@ export function MistakeDetail() {
             {pattern.title}
           </h1>
           <p className="text-xs sm:text-sm text-study-text-muted mt-2 leading-relaxed">
-            Đã xuất hiện <strong>{totalCount} lần</strong> trong các bài luyện nói của bạn.
+            Đã xuất hiện <strong>{totalCount} lần</strong> trong các bài luyện nói của bạn · Bằng chứng: <strong>{evidenceStageLabels[pattern.evidenceStage ?? 'notPracticed']}</strong>.
           </p>
         </div>
       </div>

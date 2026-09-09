@@ -9,6 +9,7 @@ interface RecordButtonProps {
   onStop: () => void
   onReset: () => void
   usingRealMic?: boolean
+  startDisabled?: boolean
 }
 
 export function RecordButton({
@@ -20,6 +21,7 @@ export function RecordButton({
   onStop,
   onReset,
   usingRealMic = false,
+  startDisabled = false,
 }: RecordButtonProps) {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -39,7 +41,7 @@ export function RecordButton({
       onStop()
     } else if (isComplete) {
       onReset()
-    } else if (!isProcessing) {
+    } else if (!isProcessing && !startDisabled) {
       onStart()
     }
   }
@@ -73,7 +75,7 @@ export function RecordButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={isProcessing}
+        disabled={isProcessing || (startDisabled && !isRecording && !isComplete)}
         aria-label={
           isRecording
             ? 'Dừng ghi âm'
@@ -81,6 +83,8 @@ export function RecordButton({
             ? 'Luyện lại lần nữa'
             : isProcessing
             ? 'AI đang phân tích'
+            : startDisabled
+            ? 'Đã hết lượt hôm nay'
             : 'Bắt đầu nói'
         }
         className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-full flex flex-col items-center justify-center gap-1 transition-all duration-300 cursor-pointer shadow-lg active:scale-95 ${
@@ -90,6 +94,8 @@ export function RecordButton({
             ? 'bg-rose-500 hover:bg-rose-600 text-white scale-105 shadow-rose-500/30 animate-record-ring'
             : isComplete
             ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/25'
+            : startDisabled
+            ? 'bg-study-surface-muted text-study-text-muted cursor-not-allowed border border-study-border shadow-none'
             : 'bg-study-primary hover:bg-study-primary-hover text-white hover:scale-105 shadow-study-primary/30'
         }`}
       >

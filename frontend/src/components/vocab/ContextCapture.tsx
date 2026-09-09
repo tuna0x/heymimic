@@ -1,5 +1,6 @@
 import { AlertCircle, Check, Copy, Plus, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { useCapabilityGate } from '../../hook/useCapabilityGate'
 import { describeApiError, type ApiFailure } from '../../service/api'
 import {
   toContextSuggestions,
@@ -7,6 +8,7 @@ import {
 } from '../../service/vocabService'
 import type { ContextSuggestion, VocabWord } from '../../type'
 import { ApiErrorNotice } from '../shared/ApiErrorNotice'
+import { CapabilityNotice } from '../shared/CapabilityNotice'
 
 const SAMPLE_TEXT =
   'During the sprint standup, we had to articulate the unexpected nuances of the new payment flow. The team was remarkably resilient and managed to resolve the edge-case errors without any major blockers.'
@@ -16,6 +18,7 @@ interface ContextCaptureProps {
 }
 
 export function ContextCapture({ onWordsAdded }: ContextCaptureProps) {
+  const capabilityGate = useCapabilityGate({ operation: 'CONTEXT_ANALYSIS' })
   const [text, setText] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -84,8 +87,10 @@ export function ContextCapture({ onWordsAdded }: ContextCaptureProps) {
       const analysis = await vocabService.waitForContextAnalysis(analysisId, controller.signal)
       setSuggestions(toContextSuggestions(analysis))
       setSource(analysis.source ?? null)
+      capabilityGate.refresh()
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return
+      capabilityGate.refresh()
       setRetryOperation('analyze')
       setFailure(describeApiError(error))
     } finally {
@@ -160,6 +165,8 @@ export function ContextCapture({ onWordsAdded }: ContextCaptureProps) {
         </button>
       </div>
 
+      <CapabilityNotice gate={capabilityGate} label="Phân tích ngữ cảnh" />
+
       <div className="space-y-2">
         <textarea
           value={text}
@@ -173,8 +180,9 @@ export function ContextCapture({ onWordsAdded }: ContextCaptureProps) {
           <span>{text.length} / 10.000 ký tự</span>
           <button
             type="button"
-            disabled={analyzing || saving || !text.trim()}
+            disabled={analyzing || saving || !text.trim() || capabilityGate.blocked}
             onClick={() => void handleAnalyze()}
+            title={capabilityGate.reason ?? undefined}
             className="px-4 py-2 rounded-xl bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover disabled:opacity-50 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
           >
             <Sparkles size={13} />

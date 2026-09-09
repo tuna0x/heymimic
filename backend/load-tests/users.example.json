@@ -1,0 +1,10 @@
+[
+  {
+    "email": "load-user-01@example.com",
+    "password": "replace-with-staging-secret"
+  },
+  {
+    "email": "load-user-02@example.com",
+    "password": "replace-with-staging-secret"
+  }
+]

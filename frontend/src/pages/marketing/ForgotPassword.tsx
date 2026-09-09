@@ -1,33 +1,42 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, CheckCircle2, Info, KeyRound, Mail, Sparkles } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowLeft, CheckCircle2, KeyRound, Mail } from 'lucide-react'
 import { FormField } from '../../components/shared/FormField'
-import { BrandLogo } from '../../components/shared/BrandLogo'
 import { usePageMeta } from '../../hook/usePageMeta'
 import { ROUTES } from '../../route/routePaths'
+import { authService } from '../../service/authService'
+import { describeApiError } from '../../service/api'
 
 export function ForgotPassword() {
-  usePageMeta('Quên Mật Khẩu (Demo) — HeyMimic', 'Khôi phục mật khẩu tài khoản học tiếng Anh HeyMimic.')
-  const navigate = useNavigate()
+  usePageMeta('Quên mật khẩu — HeyMimic', 'Khôi phục mật khẩu tài khoản học tiếng Anh HeyMimic.')
 
   const [email, setEmail] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     if (!email.trim() || !email.includes('@')) {
       setError('Vui lòng nhập định dạng email hợp lệ.')
       return
     }
+
+    setLoading(true)
     setError('')
-    setIsSubmitted(true)
+    try {
+      await authService.forgotPassword(email.trim())
+      setIsSubmitted(true)
+    } catch (cause) {
+      setError(describeApiError(cause).message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="min-h-[80vh] flex flex-col justify-center items-center px-4 py-12 text-left">
       <div className="w-full max-w-md space-y-6">
-        {/* Back Link */}
         <Link
           to={ROUTES.LOGIN}
           className="inline-flex items-center gap-1.5 text-xs text-study-text-muted hover:text-study-text transition-colors"
@@ -36,17 +45,14 @@ export function ForgotPassword() {
           <span>Quay lại trang đăng nhập</span>
         </Link>
 
-        {/* Card */}
         <div className="bg-study-surface border border-study-border rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
           <div className="space-y-2">
             <div className="w-10 h-10 rounded-xl bg-study-primary-soft text-study-primary flex items-center justify-center">
               <KeyRound size={20} />
             </div>
-            <h1 className="text-2xl font-display font-bold text-study-text">
-              Khôi phục mật khẩu
-            </h1>
+            <h1 className="text-2xl font-display font-bold text-study-text">Khôi phục mật khẩu</h1>
             <p className="text-xs text-study-text-muted leading-relaxed">
-              Nhập email tài khoản bạn đã đăng ký để nhận liên kết thiết lập lại mật khẩu.
+              Nhập email tài khoản để nhận liên kết thiết lập lại mật khẩu.
             </p>
           </div>
 
@@ -57,46 +63,35 @@ export function ForgotPassword() {
                 label="Địa chỉ email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="name@example.com"
                 error={error}
                 required
               />
-
               <button
                 type="submit"
-                className="w-full py-3 px-4 rounded-xl bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 <Mail size={15} />
-                <span>Gửi yêu cầu khôi phục</span>
+                <span>{loading ? 'Đang gửi…' : 'Gửi yêu cầu khôi phục'}</span>
               </button>
             </form>
           ) : (
-            /* Honest Demo Notice */
-            <div className="space-y-4 animate-fade-in">
-              <div className="p-4 rounded-2xl bg-study-primary-soft/40 border border-study-primary-border/60 text-xs text-study-text space-y-2">
-                <div className="flex items-center gap-2 font-semibold text-study-primary">
-                  <Info size={16} />
-                  <span>Chế độ thử nghiệm (Demo)</span>
-                </div>
-                <p className="leading-relaxed text-study-text-soft">
-                  HeyMimic hiện đang chạy ở phiên bản trải nghiệm độc lập (mock frontend). Hệ thống <strong>không gửi email thật</strong> đến hòm thư <span className="font-mono font-semibold">{email}</span>.
+            <div className="space-y-4 animate-fade-in text-center">
+              <CheckCircle2 size={42} className="mx-auto text-study-success" />
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold text-study-text">Kiểm tra hộp thư của bạn</h2>
+                <p className="text-xs text-study-text-muted leading-relaxed">
+                  Nếu email tồn tại, HeyMimic đã gửi liên kết khôi phục. Vì lý do bảo mật, hệ thống luôn hiển thị cùng một thông báo.
                 </p>
               </div>
-
-              <div className="p-4 rounded-2xl bg-study-surface-muted border border-study-border text-xs text-study-text-muted space-y-2">
-                <p>
-                  Bạn có thể chuyển sang giao diện tạo mật khẩu mới mẫu ngay dưới đây để kiểm tra trải nghiệm người dùng:
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate(ROUTES.RESET_PASSWORD)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-study-accent text-white text-xs font-semibold hover:bg-study-accent-hover transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <span>Xem bước đặt mật khẩu mẫu</span>
-                  <ArrowRight size={14} />
-                </button>
-              </div>
+              <Link
+                to={ROUTES.LOGIN}
+                className="block w-full py-2.5 rounded-xl bg-study-accent text-white text-xs font-semibold hover:bg-study-accent-hover"
+              >
+                Quay lại đăng nhập
+              </Link>
             </div>
           )}
 

@@ -12,6 +12,7 @@ interface SpeakingStudioRecorderProps {
   interimTranscript: string
   liveWpm: number
   usingRealMic: boolean
+  startDisabled: boolean
   targetOutline: string[]
   onStartRecording: () => void
   onStopRecording: () => void
@@ -28,6 +29,7 @@ export function SpeakingStudioRecorder({
   interimTranscript,
   liveWpm,
   usingRealMic,
+  startDisabled,
   targetOutline,
   onStartRecording,
   onStopRecording,
@@ -57,6 +59,7 @@ export function SpeakingStudioRecorder({
         onStop={onStopRecording}
         onReset={onResetRecording}
         usingRealMic={usingRealMic}
+        startDisabled={startDisabled}
       />
     </div>
   )

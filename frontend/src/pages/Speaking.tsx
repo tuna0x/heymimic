@@ -8,11 +8,13 @@ import { SpeakingContextCard } from '../components/speaking/SpeakingContextCard'
 import { SpeakingStudioRecorder } from '../components/speaking/SpeakingStudioRecorder'
 import { TopicSelector } from '../components/speaking/TopicSelector'
 import { ApiErrorNotice } from '../components/shared/ApiErrorNotice'
+import { CapabilityNotice } from '../components/shared/CapabilityNotice'
 import { SectionLabel, StatusPill } from '../components/shared/UI'
 import { useAmbientSound } from '../hook/useAmbientSound'
 import { useAudioRecorder } from '../hook/useAudioRecorder'
 import { useLiveSpeechRecognition } from '../hook/useLiveSpeechRecognition'
 import { usePageMeta } from '../hook/usePageMeta'
+import { useCapabilityGate } from '../hook/useCapabilityGate'
 import { describeApiError, type ApiFailure } from '../service/api'
 import {
   speakingService,
@@ -32,6 +34,7 @@ export function Speaking() {
   )
 
   const navigate = useNavigate()
+  const capabilityGate = useCapabilityGate({ operation: 'SPEAKING_EVALUATION' })
   const setActiveStudySession = useMimicStore((state) => state.setActiveStudySession)
   const [carriedWords, setCarriedWords] = useState<VocabWord[]>([])
   const [topics, setTopics] = useState<SpeakingTopic[]>([])
@@ -143,10 +146,12 @@ export function Speaking() {
         setAnalysis(result)
         const spokenText = (result.userTranscript || liveTranscript).toLowerCase()
         setSecretMissionDetected(spokenText.includes(secretMissionTarget.toLowerCase()))
+        capabilityGate.refresh()
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
         processedBlobRef.current = null
+        capabilityGate.refresh()
         setFailure(describeApiError(error))
       })
       .finally(() => setEvaluationBusy(false))
@@ -158,10 +163,11 @@ export function Speaking() {
     liveTranscript,
     secretMissionTarget,
     serverSession?.id,
+    capabilityGate.refresh,
   ])
 
   const handleStartRecording = useCallback(async () => {
-    if (!activeTopic || evaluationBusy) return
+    if (!activeTopic || evaluationBusy || capabilityGate.blocked) return
     setFailure(null)
     let session = serverSession
     try {
@@ -177,7 +183,7 @@ export function Speaking() {
     } catch (error) {
       setFailure(describeApiError(error))
     }
-  }, [activeTopic, evaluationBusy, serverSession, startListening, startRecording])
+  }, [activeTopic, capabilityGate.blocked, evaluationBusy, serverSession, startListening, startRecording])
 
   const handleStopRecording = () => {
     stopRecording()
@@ -322,6 +328,8 @@ export function Speaking() {
           }
         />
       )}
+      <CapabilityNotice gate={capabilityGate} label="Đánh giá Speaking" />
+
       {recorderError && (
         <div role="alert" className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 text-xs text-study-text">
           {recorderError}
@@ -360,6 +368,7 @@ export function Speaking() {
         interimTranscript={interimTranscript}
         liveWpm={liveWpm}
         usingRealMic={usingRealMic}
+        startDisabled={capabilityGate.blocked}
         targetOutline={activeTopic.outline}
         onStartRecording={() => void handleStartRecording()}
         onStopRecording={handleStopRecording}

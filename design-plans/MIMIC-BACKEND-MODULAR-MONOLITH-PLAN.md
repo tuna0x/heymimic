@@ -18,10 +18,18 @@
 - B11 observability slice đã có worker outcome/duration/heartbeat metrics và maintenance
   count/failure/last-success metrics cho context analysis, review session và audio retention;
   queue observer đã có due-count, oldest-due-job age, delivery lag và refresh-health gauges.
-  Migration V15 bổ sung partial index cho expired lease; suite unit/architecture hiện có 97 test
+  Migration V15 bổ sung partial index cho expired lease; suite unit/architecture hiện có 101 test
   đã pass. PostgreSQL observation IT đã được viết nhưng cần Docker daemon để thực thi.
-- Platform release hardening còn lại: audited replay, restore drill, load test và release docs sẽ
-  hoàn thiện cùng milestone vận hành.
+- B11 audited event-delivery replay đã có internal command, dry-run, row lock, reset retry budget
+  và audit bền vững cho cả accepted/rejected/not-found outcome; không mở HTTP và chủ động loại job
+  replay khỏi phạm vi vì paid-work cần policy riêng.
+- B11 restore drill đã có PowerShell automation tạo custom-format dump, restore vào database cách
+  ly, kiểm tra Flyway/audio metadata, xuất object manifest + SHA-256/timing evidence và runbook an
+  toàn. Chưa ghi nhận RPO/RTO đạt vì Docker/production-like storage chưa sẵn sàng để đo.
+- B11 load-test harness k6 cho upload/evaluation polling và release checklist đã có; guardrail và
+  precondition ghi rõ, không tự tuyên bố SLO/RPO/RTO khi chưa có staging evidence.
+- Platform release hardening còn lại: chạy load test/restore drill production-like, chốt provider
+  evidence và ký release approval.
 - B02 đã bắt đầu theo vertical slice register: V2 tạo identity/learner/session/token tables; user và
   learner profile dùng Spring Data JPA; password dùng Argon2id; `GET /api/v1/auth/csrf` và
   `POST /api/v1/auth/register` đã có validation, CSRF, duplicate handling và transaction xuyên

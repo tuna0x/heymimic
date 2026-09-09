@@ -11,4 +11,8 @@ public interface AudioObjectStorage {
   AudioPlaybackGrant issuePlayback(String objectKey, String objectVersion, Instant expiresAt);
 
   void delete(String objectKey, String objectVersion);
+
+  default AudioObjectBytes read(String objectKey, String objectVersion) {
+    throw new UnsupportedOperationException("Audio object read is not configured");
+  }
 }

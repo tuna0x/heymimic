@@ -24,22 +24,23 @@
 
 ## 2. Phạm vi giai đoạn hiện tại
 
-**Đang làm:** Dựng UI/frontend hoàn chỉnh bằng **mock data**, chưa nối logic AI/backend thật.
+**Đang làm:** Mở rộng nền tảng từ UI mock sang luồng API có persistence. Backend đã có modular monolith Spring Boot/PostgreSQL/Flyway; frontend dùng React/TypeScript/Vite/Tailwind/Zustand và client sinh từ OpenAPI.
 
-**Ưu tiên theo thứ tự:**
-1. App chính (khu vực sau đăng nhập): Dashboard → Vocab → Speaking → Progress
-2. Trang bên ngoài (marketing site, trước đăng nhập): Landing → Login/Signup → About → Contact → Blog
-3. (Chưa làm) Nối AI agent thật qua Claude API
-4. (Chưa làm) Nối backend/persistence thật (auth, database)
+**Capability matrix hiện tại:**
 
-**Nguyên tắc code ở giai đoạn này:**
-- Mock data phải có type/shape giống hệt dữ liệu thật sẽ trả về sau này, để khi nối API không phải sửa lại component
-- Component tách nhỏ, tái sử dụng được, không viết page thành 1 file khổng lồ
-- Không tự ý thêm backend/API call thật nếu chưa được yêu cầu — giai đoạn này CHỈ làm giao diện
+| Capability | Trạng thái |
+|---|---|
+| Auth, learner profile, vocabulary, speaking session/attempt/evaluation, progress, Study | API thật + persistence + test |
+| Mistake status, evidence stage, capability/usage quota | Contract slice đã triển khai; frontend service đã nối |
+| Video shadowing acoustic score | Demo-only; luôn gắn source: demo, chưa phải chấm âm thanh |
+| AI extraction/evaluation | Claude adapter cho staging/prod; deterministic fake ở dev/test; output JSON được validate và lỗi được phân loại |
+| STT và audio storage | Deepgram/S3 core adapter cho staging/prod; fake ở dev/test; orphan cleanup và smoke test còn mở |
+| Identity email delivery | Resend adapter cho staging/prod; in-memory ở dev/test |
 
+**Ưu tiên tiếp theo:** hoàn thiện M0 còn lại, sau đó M1 provider/audio pipeline và M3 remediation end-to-end theo implementation plan.
 ---
 
-## 3. Kiến trúc AI Agent (định hướng, sẽ nối ở giai đoạn sau)
+## 3. Kiến trúc AI Agent
 
 | Agent | Vai trò | Input | Output |
 |---|---|---|---|
@@ -47,7 +48,7 @@
 | **Speaking Agent** | Đưa tình huống nói, phân tích transcript (ngữ pháp, từ vựng, độ trôi chảy), gợi ý câu tốt hơn | Transcript từ speech-to-text, lịch sử lỗi trước đó | Phản hồi chi tiết + câu hỏi follow-up để giữ hội thoại |
 | **Progress/Coordinator Agent** | Theo dõi tiến bộ tổng thể, quyết định nên ưu tiên vocab mới hay ôn lỗi cũ hay luyện nói hôm nay | Lịch sử học tập, streak, lỗi lặp lại | Gợi ý ưu tiên hoạt động trong ngày |
 
-**Ghi chú kỹ thuật khi nối agent thật (giai đoạn sau):** dùng Claude API (`/v1/messages`), mỗi agent = 1 system prompt riêng, Coordinator Agent có thể truyền context giữa các agent (VD: Speaking Agent nhận thêm từ vựng đang học từ Vocab Agent để ưu tiên dùng trong tình huống nói). Speech-to-text dùng Whisper API.
+**Ghi chú kỹ thuật:** adapter Claude dùng Messages API (/v1/messages) với system prompt riêng cho extraction và feedback. Backend gửi secret qua server, giới hạn output, validate JSON rồi mới ghi kết quả; lỗi rate limit/5xx được retry còn auth/schema lỗi kết thúc job. STT và audio storage core đã có adapter staging/prod; orphan cleanup, browser recovery và smoke test thật vẫn là gate tiếp theo; provider không được gọi từ trình duyệt.
 
 ---
 
@@ -226,8 +227,8 @@ mimic/
 ---
 
 ## 8. Việc cần làm sau (KHÔNG làm ở giai đoạn hiện tại, chỉ để tham khảo hướng)
-- Nối Speaking Agent + Vocab Agent + Coordinator Agent qua Claude API
-- Speech-to-text qua Whisper API
+- Mở rộng Claude adapter cho brief/roleplay/coordinator sau khi nghiệm thu extraction và feedback hiện tại
+- Speech-to-text qua Deepgram prerecorded API
 - Auth thật (Supabase Auth hoặc tương đương) cho `/login`, `/signup`
 - Nối `/contact` với email service thật
 - Blog: chuyển từ mock sang markdown/CMS thật

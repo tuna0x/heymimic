@@ -1,5 +1,4 @@
 import { Check, Circle, RotateCcw } from 'lucide-react'
-import { useMimicStore } from '../../store/useMimicStore'
 import type { VocabWord } from '../../type'
 import { ProgressBar } from '../shared/UI'
 
@@ -7,19 +6,23 @@ function statusLabel(status: VocabWord['status']) {
   return status === 'new' ? 'MỚI' : status === 'reviewing' ? 'ĐANG ÔN' : 'ĐÃ THUỘC'
 }
 
-export function VocabList({ words }: { words: VocabWord[] }) {
-  const selected = useMimicStore((state) => state.selectedWordId)
-  const selectWord = useMimicStore((state) => state.selectWord)
+interface VocabListProps {
+  words: VocabWord[]
+  selectedWordId?: string
+  onSelectWord: (wordId: string) => void
+}
+
+export function VocabList({ words, selectedWordId, onSelectWord }: VocabListProps) {
 
   return (
     <div className="space-y-1.5">
       {words.map((word, index) => {
-        const isSelected = selected === word.id
+        const isSelected = selectedWordId === word.id
         return (
           <button
             key={word.id}
             type="button"
-            onClick={() => selectWord(word.id)}
+            onClick={() => onSelectWord(word.id)}
             className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left border cursor-pointer ${
               isSelected
                 ? 'bg-study-primary-soft/60 border-study-primary-border shadow-xs'

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface ScrollRevealOptions {
   /** Intersection threshold (0–1). Default 0.15 */
@@ -23,15 +23,16 @@ interface ScrollRevealOptions {
  * <div ref={ref} className={`scroll-reveal ${isVisible ? 'visible' : ''}`}>
  * ```
  */
-export function useScrollReveal<T extends HTMLElement = HTMLDivElement>(
+export function useScrollReveal<T extends HTMLElement = HTMLElement>(
   options: ScrollRevealOptions = {}
-): [React.RefObject<T | null>, boolean] {
+): [(node?: T | null) => void, boolean] {
   const { threshold = 0.15, delay = 0, once = true, rootMargin = '0px 0px -40px 0px' } = options
-  const ref = useRef<T | null>(null)
+  const [element, setElement] = useState<T | null>(null)
   const [isVisible, setIsVisible] = useState(false)
+  const ref = useCallback((node?: T | null) => setElement(node ?? null), [])
 
   useEffect(() => {
-    const el = ref.current
+    const el = element
     if (!el) return
 
     const observer = new IntersectionObserver(
@@ -52,7 +53,7 @@ export function useScrollReveal<T extends HTMLElement = HTMLDivElement>(
 
     observer.observe(el)
     return () => observer.disconnect()
-  }, [threshold, delay, once, rootMargin])
+  }, [element, threshold, delay, once, rootMargin])
 
   return [ref, isVisible]
 }

@@ -1,33 +1,55 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
-  BookOpen,
-  Calendar,
   CheckCircle2,
   ExternalLink,
   HelpCircle,
   Lightbulb,
   Mic2,
-  RotateCcw,
   Sparkles,
   Volume2,
   XCircle,
 } from 'lucide-react'
-import { useMimicStore } from '../store/useMimicStore'
 import { ROUTES } from '../route/routePaths'
 import { EmptyState } from '../components/shared/EmptyState'
+import { ApiErrorNotice } from '../components/shared/ApiErrorNotice'
 import { usePageMeta } from '../hook/usePageMeta'
 import type { MistakeOccurrence, MistakePattern } from '../type'
+import { describeApiError, type ApiFailure } from '../service/api'
+import { progressService } from '../service/progressService'
 
 export function MistakeDetail() {
   const { mistakeId } = useParams<{ mistakeId: string }>()
   const navigate = useNavigate()
-  const { mistakePatterns, updateMistakeStatus } = useMimicStore()
+  const [pattern, setPattern] = useState<MistakePattern | null>(null)
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [failure, setFailure] = useState<ApiFailure | null>(null)
+  const [updating, setUpdating] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
-  const pattern = mistakePatterns.find((m) => m.id === mistakeId)
+  useEffect(() => {
+    if (!mistakeId) {
+      setLoadState('ready')
+      return
+    }
+    const controller = new AbortController()
+    setLoadState('loading')
+    setFailure(null)
+    progressService
+      .getMistake(mistakeId, controller.signal)
+      .then((value) => {
+        setPattern(value)
+        setLoadState('ready')
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setFailure(describeApiError(error))
+        setLoadState('error')
+      })
+    return () => controller.abort()
+  }, [mistakeId, reloadKey])
 
   usePageMeta(
     pattern ? `Điểm cần luyện: ${pattern.title} — HeyMimic` : 'Chi Tiết Điểm Cần Luyện — HeyMimic',
@@ -37,6 +59,25 @@ export function MistakeDetail() {
   // Interactive Mini Practice State
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [hasSubmittedPractice, setHasSubmittedPractice] = useState(false)
+
+  if (loadState === 'loading') {
+    return (
+      <div
+        role="status"
+        className="mx-auto max-w-4xl rounded-2xl border border-study-border bg-study-surface p-6 text-sm text-study-text-muted"
+      >
+        Đang tải chi tiết điểm cần luyện…
+      </div>
+    )
+  }
+
+  if (loadState === 'error' && failure) {
+    return (
+      <div className="mx-auto max-w-4xl py-8">
+        <ApiErrorNotice failure={failure} onRetry={() => setReloadKey((value) => value + 1)} />
+      </div>
+    )
+  }
 
   if (!pattern) {
     return (
@@ -93,12 +134,24 @@ export function MistakeDetail() {
     }
   }
 
+  const updateStatus = async (status: MistakePattern['status']) => {
+    setUpdating(true)
+    setFailure(null)
+    try {
+      setPattern(await progressService.updateMistakeStatus(pattern, status))
+    } catch (error) {
+      setFailure(describeApiError(error))
+    } finally {
+      setUpdating(false)
+    }
+  }
+
   const handlePracticeSubmit = () => {
     if (selectedOption === null) return
     setHasSubmittedPractice(true)
     const isCorrect = practiceOptions[selectedOption]?.isCorrect
     if (isCorrect && pattern.status === 'needsPractice') {
-      updateMistakeStatus(pattern.id, 'improving')
+      void updateStatus('improving')
     }
   }
 
@@ -118,6 +171,8 @@ export function MistakeDetail() {
         </Link>
       </div>
 
+      {failure && <ApiErrorNotice failure={failure} />}
+
       {/* Main Header Card */}
       <div className="p-6 rounded-3xl bg-study-surface border border-study-border shadow-xs space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -136,7 +191,8 @@ export function MistakeDetail() {
             {pattern.status !== 'mastered' ? (
               <button
                 type="button"
-                onClick={() => updateMistakeStatus(pattern.id, 'mastered')}
+                disabled={updating}
+                onClick={() => void updateStatus('mastered')}
                 className="px-3 py-1.5 rounded-lg border border-study-border text-xs font-semibold text-study-text hover:bg-study-surface-hover transition-colors cursor-pointer"
               >
                 Đánh dấu đã làm chủ
@@ -144,7 +200,8 @@ export function MistakeDetail() {
             ) : (
               <button
                 type="button"
-                onClick={() => updateMistakeStatus(pattern.id, 'improving')}
+                disabled={updating}
+                onClick={() => void updateStatus('improving')}
                 className="px-3 py-1.5 rounded-lg border border-study-border text-xs font-semibold text-study-text hover:bg-study-surface-hover transition-colors cursor-pointer"
               >
                 Đưa về đang luyện

@@ -50,6 +50,19 @@ class DatabaseMigrationIT {
             "identity_session_families",
             "identity_refresh_tokens",
             "identity_email_tokens",
-            "learner_profiles");
+            "learner_profiles",
+            "progress_activity_ledger",
+            "progress_daily_activities",
+            "progress_mistake_patterns",
+            "progress_mistake_occurrences",
+            "progress_projection_generations",
+            "progress_projection_state",
+            "speaking_topics",
+            "speaking_sessions",
+            "speaking_attempts",
+            "speaking_evaluations",
+            "speaking_feedback_items",
+            "study_sessions",
+            "study_steps");
   }
 }

@@ -23,5 +23,12 @@ class SensitiveRequestRedactionTest {
         .contains("[REDACTED]")
         .doesNotContain(verificationToken)
         .doesNotContain(password);
+    assertThat(new ChangePasswordRequest(password, "a different secure password").toString())
+        .contains("[REDACTED]")
+        .doesNotContain(password)
+        .doesNotContain("a different secure password");
+    assertThat(new DeleteAccountRequest(password, "DELETE").toString())
+        .contains("[REDACTED]")
+        .doesNotContain(password);
   }
 }

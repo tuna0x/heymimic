@@ -8,8 +8,14 @@ spring:
   flyway.enabled: true
 server.shutdown: graceful
 management:
-  endpoints.web.exposure.include: health,info
+  endpoints.web.exposure.include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info}
   endpoint.health.show-details: never
+  metrics.tags.application: ${spring.application.name}
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui.enabled: false
 heymimic:
   web.allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:5173}
   security:
@@ -32,7 +38,29 @@ heymimic:
     lease: 120s
     poll-interval: 2s
     max-attempts: 5
+  observability:
+    queue-metrics:
+      enabled: ${QUEUE_METRICS_ENABLED:true}
+      interval: ${QUEUE_METRICS_INTERVAL:PT30S}
+      initial-delay: ${QUEUE_METRICS_INITIAL_DELAY:PT5S}
   quotas:
     daily-limits:
       SPEAKING_EVALUATION: 20
       CONTEXT_ANALYSIS: 20
+  vocabulary:
+    context-analysis-cleanup:
+      enabled: ${CONTEXT_ANALYSIS_CLEANUP_ENABLED:true}
+      interval: ${CONTEXT_ANALYSIS_CLEANUP_INTERVAL:PT1H}
+      batch-size: ${CONTEXT_ANALYSIS_CLEANUP_BATCH_SIZE:100}
+    review-session-cleanup:
+      enabled: ${REVIEW_SESSION_CLEANUP_ENABLED:true}
+      interval: ${REVIEW_SESSION_CLEANUP_INTERVAL:PT15M}
+      inactivity-timeout: ${REVIEW_SESSION_INACTIVITY_TIMEOUT:PT24H}
+      batch-size: ${REVIEW_SESSION_CLEANUP_BATCH_SIZE:100}
+  speaking:
+    fake-storage: ${SPEAKING_FAKE_STORAGE:false}
+    fake-evaluation: ${SPEAKING_FAKE_EVALUATION:false}
+    audio-retention-cleanup:
+      enabled: ${SPEAKING_AUDIO_RETENTION_CLEANUP_ENABLED:true}
+      interval: ${SPEAKING_AUDIO_RETENTION_CLEANUP_INTERVAL:PT1H}
+      batch-size: ${SPEAKING_AUDIO_RETENTION_CLEANUP_BATCH_SIZE:100}

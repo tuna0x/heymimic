@@ -4,7 +4,7 @@ import type { DailyRecommendation, LearnerProfile, SpeakingTopic, StudySession }
 
 interface TodaySessionFocusProps {
   activeStudySession: StudySession | null
-  targetTopic: SpeakingTopic
+  targetTopic?: SpeakingTopic
   recommendation: DailyRecommendation
   profile: LearnerProfile
   onStartTodaySession: () => void
@@ -63,7 +63,7 @@ export function TodaySessionFocus({
 
           <div>
             <h2 className="text-xl font-display font-semibold text-study-text">
-              {targetTopic.title}
+              {targetTopic?.title ?? 'Tiếp tục buổi học đang thực hiện'}
             </h2>
             <p className="text-xs text-study-text-muted mt-1">
               Tiếp tục hoàn thành buổi học để lưu nhận xét và duy trì chuỗi streak hôm nay.

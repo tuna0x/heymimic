@@ -4,6 +4,9 @@ import com.dev.heymimic.platform.application.publicapi.AccountWorkGuard;
 import com.dev.heymimic.platform.application.publicapi.ClaimedJob;
 import com.dev.heymimic.platform.application.publicapi.JobHandler;
 import com.dev.heymimic.platform.application.publicapi.JobQueue;
+import com.dev.heymimic.platform.application.publicapi.NonRetryableJobException;
+import com.dev.heymimic.platform.application.publicapi.RetryableJobException;
+import com.dev.heymimic.platform.infrastructure.observability.PlatformWorkerMetrics;
 import jakarta.annotation.PreDestroy;
 import java.time.Clock;
 import java.time.Duration;
@@ -36,6 +39,7 @@ public class PlatformJobWorker {
   private final AccountWorkGuard accountWorkGuard;
   private final JobWorkerConfiguration.Properties properties;
   private final Clock clock;
+  private final PlatformWorkerMetrics metrics;
   private final ScheduledExecutorService heartbeatExecutor =
       Executors.newSingleThreadScheduledExecutor(
           runnable -> {
@@ -49,7 +53,8 @@ public class PlatformJobWorker {
       Collection<JobHandler> handlers,
       ObjectProvider<AccountWorkGuard> accountWorkGuard,
       JobWorkerConfiguration.Properties properties,
-      Clock clock) {
+      Clock clock,
+      PlatformWorkerMetrics metrics) {
     this.queue = queue;
     this.handlers =
         handlers.stream()
@@ -64,6 +69,7 @@ public class PlatformJobWorker {
     this.accountWorkGuard = accountWorkGuard.getIfAvailable(() -> ownerUserId -> true);
     this.properties = properties;
     this.clock = clock;
+    this.metrics = metrics;
   }
 
   @Scheduled(fixedDelayString = "${heymimic.jobs.poll-interval:2s}")
@@ -78,27 +84,36 @@ public class PlatformJobWorker {
   }
 
   void execute(ClaimedJob job) {
+    long startedAt = System.nanoTime();
+    String outcome = "worker_error";
+    try {
+      outcome = process(job);
+    } finally {
+      metrics.recordJob(job.type(), outcome, System.nanoTime() - startedAt);
+    }
+  }
+
+  private String process(ClaimedJob job) {
     JobHandler handler = handlers.get(job.type());
     if (handler == null) {
-      finishFinal(job, "UNKNOWN_JOB_TYPE");
-      return;
+      return finishFinal(job, "UNKNOWN_JOB_TYPE") ? "unknown_type" : "lease_rejected";
     }
-    if (!accountWorkGuard.canStartWork(job.ownerUserId())) {
-      finishFinal(job, "ACCOUNT_INACTIVE");
-      return;
+    if (!handler.allowsInactiveOwner() && !accountWorkGuard.canStartWork(job.ownerUserId())) {
+      return finishFinal(job, "ACCOUNT_INACTIVE") ? "owner_inactive" : "lease_rejected";
     }
 
     ScheduledFuture<?> heartbeat = startHeartbeat(job);
     try {
       handler.handle(job);
+    } catch (NonRetryableJobException exception) {
+      heartbeat.cancel(false);
+      return failWithoutRetry(handler, job, exception.errorCode(), exception);
     } catch (RetryableJobException exception) {
       heartbeat.cancel(false);
-      retryOrFail(job, exception.errorCode(), exception);
-      return;
+      return retryOrFail(handler, job, exception.errorCode(), exception);
     } catch (Exception exception) {
       heartbeat.cancel(false);
-      retryOrFail(job, "UNEXPECTED_ERROR", exception);
-      return;
+      return retryOrFail(handler, job, "UNEXPECTED_ERROR", exception);
     } finally {
       heartbeat.cancel(false);
     }
@@ -107,6 +122,7 @@ public class PlatformJobWorker {
     if (!saved) {
       log.warn("Job completion rejected by lease fence: jobId={}", job.id());
     }
+    return saved ? "succeeded" : "lease_rejected";
   }
 
   private ScheduledFuture<?> startHeartbeat(ClaimedJob job) {
@@ -120,7 +136,9 @@ public class PlatformJobWorker {
             if (!renewed) {
               log.warn("Job heartbeat rejected by lease fence: jobId={}", job.id());
             }
+            metrics.recordJobHeartbeat(job.type(), renewed ? "renewed" : "lease_rejected");
           } catch (RuntimeException exception) {
+            metrics.recordJobHeartbeat(job.type(), "error");
             log.error("Job heartbeat failed: jobId={}", job.id(), exception);
           }
         },
@@ -134,11 +152,21 @@ public class PlatformJobWorker {
     heartbeatExecutor.shutdownNow();
   }
 
-  private void retryOrFail(ClaimedJob job, String errorCode, Exception exception) {
+  private String retryOrFail(
+      JobHandler handler, ClaimedJob job, String errorCode, Exception exception) {
     if (job.attempts() >= properties.maxAttempts()) {
-      finishFinal(job, errorCode);
+      try {
+        handler.onFinalFailure(job, errorCode);
+      } catch (RuntimeException callbackException) {
+        log.error(
+            "Final failure callback failed: jobId={}, type={}",
+            job.id(),
+            job.type(),
+            callbackException);
+      }
+      boolean saved = finishFinal(job, errorCode);
       log.error("Job exhausted retry budget: jobId={}, type={}", job.id(), job.type(), exception);
-      return;
+      return saved ? "failed_final" : "lease_rejected";
     }
 
     Duration delay = RETRY_DELAYS[Math.min(job.attempts() - 1, RETRY_DELAYS.length - 1)];
@@ -149,13 +177,31 @@ public class PlatformJobWorker {
     if (!saved) {
       log.warn("Job retry rejected by lease fence: jobId={}", job.id());
     }
+    return saved ? "retry_scheduled" : "lease_rejected";
   }
 
-  private void finishFinal(ClaimedJob job, String errorCode) {
+  private String failWithoutRetry(
+      JobHandler handler, ClaimedJob job, String errorCode, Exception exception) {
+    try {
+      handler.onFinalFailure(job, errorCode);
+    } catch (RuntimeException callbackException) {
+      log.error(
+          "Non-retryable failure callback failed: jobId={}, type={}",
+          job.id(),
+          job.type(),
+          callbackException);
+    }
+    boolean saved = finishFinal(job, errorCode);
+    log.error("Job failed without retry: jobId={}, type={}", job.id(), job.type(), exception);
+    return saved ? "failed_final" : "lease_rejected";
+  }
+
+  private boolean finishFinal(ClaimedJob job, String errorCode) {
     boolean saved =
         queue.failFinal(job.id(), properties.workerId(), job.leaseGeneration(), errorCode);
     if (!saved) {
       log.warn("Final job failure rejected by lease fence: jobId={}", job.id());
     }
+    return saved;
   }
 }

@@ -25,5 +25,7 @@ public interface SessionStore {
 
   void revokeAllForUser(UUID userId, Instant now);
 
+  void deleteAllForUser(UUID userId);
+
   boolean isFamilyActive(UUID familyId, UUID userId, Instant now);
 }

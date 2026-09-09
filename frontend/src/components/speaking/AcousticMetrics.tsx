@@ -1,11 +1,12 @@
 import { Award, Gauge, Sparkles, Waves } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 interface AcousticMetricsProps {
   score: number
-  fluencyScore: number
-  wpm: number
-  cadenceScore: number
-  vocabScore: number
+  fluencyScore?: number
+  wpm?: number
+  cadenceScore?: number
+  vocabScore?: number
 }
 
 export function AcousticMetrics({
@@ -15,8 +16,18 @@ export function AcousticMetrics({
   cadenceScore,
   vocabScore,
 }: AcousticMetricsProps) {
+  interface Metric {
+    label: string
+    score: number
+    unit: string
+    icon: ReactNode
+    evaluation: string
+    barColor: string
+    percent?: number
+  }
+
   const metrics = [
-    {
+    fluencyScore === undefined ? null : {
       label: 'Độ tự nhiên (Fluency)',
       score: fluencyScore,
       unit: '%',
@@ -24,7 +35,7 @@ export function AcousticMetrics({
       evaluation: fluencyScore >= 85 ? 'Rất tự nhiên' : 'Cần bớt ngập ngừng',
       barColor: 'bg-study-primary',
     },
-    {
+    wpm === undefined ? null : {
       label: 'Tốc độ nói (WPM)',
       score: wpm,
       unit: 'wpm',
@@ -33,7 +44,7 @@ export function AcousticMetrics({
       barColor: 'bg-amber-500',
       percent: Math.min(100, Math.round((wpm / 150) * 100)),
     },
-    {
+    cadenceScore === undefined ? null : {
       label: 'Ngữ điệu & Nhịp (Cadence)',
       score: cadenceScore,
       unit: '%',
@@ -41,7 +52,7 @@ export function AcousticMetrics({
       evaluation: cadenceScore >= 80 ? 'Nhấn đúng trọng âm' : 'Cần chú ý ngắt nhịp',
       barColor: 'bg-emerald-500',
     },
-    {
+    vocabScore === undefined ? null : {
       label: 'Từ vựng ngữ cảnh (Vocab)',
       score: vocabScore,
       unit: '%',
@@ -49,7 +60,7 @@ export function AcousticMetrics({
       evaluation: vocabScore >= 80 ? 'Sử dụng cụm từ tốt' : 'Từ vựng hơi lặp lại',
       barColor: 'bg-indigo-500',
     },
-  ]
+  ].filter((item) => item !== null) as Metric[]
 
   return (
     <div className="space-y-3">
@@ -63,7 +74,7 @@ export function AcousticMetrics({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {metrics.length > 0 && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {metrics.map((item, idx) => {
           const percent = item.percent ?? item.score
 
@@ -100,7 +111,12 @@ export function AcousticMetrics({
             </div>
           )
         })}
-      </div>
+      </div>}
+      {metrics.length === 0 && (
+        <p className="text-xs text-study-text-muted">
+          Nhà cung cấp đánh giá chưa trả về các chỉ số chi tiết cho lượt nói này.
+        </p>
+      )}
     </div>
   )
 }

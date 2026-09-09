@@ -8,20 +8,15 @@ import {
 } from './storageKeys'
 import { createUiSlice, UiSlice } from './slices/createUiSlice'
 import { createProfileSlice, ProfileSlice } from './slices/createProfileSlice'
-import { createVocabSlice, VocabSlice } from './slices/createVocabSlice'
 import { createSpeakingSlice, SpeakingSlice } from './slices/createSpeakingSlice'
 import { createProgressSlice, ProgressSlice } from './slices/createProgressSlice'
 import { createEcosystemSlice, EcosystemSlice } from './slices/createEcosystemSlice'
-import { todayWords } from '../mocks/vocab'
-import { recentSessions } from '../mocks/speaking'
-import { initialMistakePatterns } from '../mocks/progress'
 import { workplaceCollocations } from '../mocks/collocations'
 
 export type { ThemeMode }
 
 export type MimicStore = UiSlice &
   ProfileSlice &
-  VocabSlice &
   SpeakingSlice &
   ProgressSlice &
   EcosystemSlice & {
@@ -45,7 +40,6 @@ if (typeof window !== 'undefined') {
 export const useMimicStore = create<MimicStore>()((set, get, api) => ({
   ...createUiSlice(set, get, api),
   ...createProfileSlice(set, get, api),
-  ...createVocabSlice(set, get, api),
   ...createSpeakingSlice(set, get, api),
   ...createProgressSlice(set, get, api),
   ...createEcosystemSlice(set, get, api),
@@ -62,16 +56,11 @@ export const useMimicStore = create<MimicStore>()((set, get, api) => ({
       theme: 'system',
       sidebarCollapsed: false,
       profile: defaultProfile,
-      studySessions: [],
       activeStudySession: null,
-      activeReviewSession: null,
-      activeSpeakingSession: null,
       activePeerSession: null,
       peerSessions: [],
       videoAttempts: [],
-      vocabWords: todayWords,
-      speakingSessions: recentSessions,
-      mistakePatterns: initialMistakePatterns,
+      mistakePatterns: [],
       dailyActivities: [],
       completedListeningIds: [],
       dialogueTurns: {},

@@ -132,6 +132,12 @@ public class JdbcSessionStore implements SessionStore {
   }
 
   @Override
+  public void deleteAllForUser(UUID userId) {
+    jdbc.update("delete from identity_refresh_tokens where user_id = ?", userId);
+    jdbc.update("delete from identity_session_families where user_id = ?", userId);
+  }
+
+  @Override
   public boolean isFamilyActive(UUID familyId, UUID userId, Instant now) {
     Boolean active =
         jdbc.queryForObject(

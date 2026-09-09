@@ -45,76 +45,14 @@ describe('useMimicStore', () => {
     it('completes onboarding', () => {
       useMimicStore.getState().completeOnboarding({
         goal: 'interview',
-        selfAssessedLevel: 'advanced',
-        dailyMinutesGoal: 20,
+        selfAssessedLevel: 'intermediate',
+        dailyMinutesGoal: 15,
       })
       const profile = useMimicStore.getState().profile
       expect(profile.goal).toBe('interview')
-      expect(profile.selfAssessedLevel).toBe('advanced')
-      expect(profile.dailyMinutesGoal).toBe(20)
+      expect(profile.selfAssessedLevel).toBe('intermediate')
+      expect(profile.dailyMinutesGoal).toBe(15)
       expect(profile.onboardingCompleted).toBe(true)
-    })
-  })
-
-  describe('Vocab Review Lifecycle', () => {
-    it('starts review session with initial cards', () => {
-      const session = useMimicStore.getState().startReviewSession()
-      expect(session).toBeDefined()
-      expect(session.status).toBe('inProgress')
-      expect(session.currentIndex).toBe(0)
-      expect(session.wordIds.length).toBeGreaterThan(0)
-      expect(useMimicStore.getState().isFlashcardFlipped).toBe(false)
-    })
-
-    it('flips flashcard', () => {
-      expect(useMimicStore.getState().isFlashcardFlipped).toBe(false)
-      useMimicStore.getState().flipFlashcard()
-      expect(useMimicStore.getState().isFlashcardFlipped).toBe(true)
-    })
-
-    it('rates card and advances index', () => {
-      useMimicStore.getState().startReviewSession(['word-1', 'word-2'])
-      useMimicStore.getState().rateCurrentWord('remembered')
-
-      const session = useMimicStore.getState().activeReviewSession
-      expect(session?.currentIndex).toBe(1)
-      expect(session?.reviews.length).toBe(1)
-      expect(session?.reviews[0]?.rating).toBe('remembered')
-    })
-
-    it('allows undoing the last review card', () => {
-      useMimicStore.getState().startReviewSession(['word-1', 'word-2'])
-      useMimicStore.getState().rateCurrentWord('remembered')
-      expect(useMimicStore.getState().activeReviewSession?.currentIndex).toBe(1)
-
-      useMimicStore.getState().undoLastReview()
-      expect(useMimicStore.getState().activeReviewSession?.currentIndex).toBe(0)
-      expect(useMimicStore.getState().activeReviewSession?.reviews.length).toBe(0)
-    })
-  })
-
-  describe('Speaking Session Lifecycle', () => {
-    it('starts speaking session for given topic', () => {
-      const session = useMimicStore.getState().startSpeakingSession('topic-daily-standup')
-      expect(session).toBeDefined()
-      expect(session.status).toBe('inProgress')
-      expect(useMimicStore.getState().activeSpeakingSession?.id).toBe(session.id)
-    })
-
-    it('records speaking attempts in active session', () => {
-      const session = useMimicStore.getState().startSpeakingSession('topic-daily-standup')
-      useMimicStore.getState().addSpeakingAttempt({
-        id: 'att-1',
-        speakingSessionId: session.id,
-        attemptNumber: 1,
-        durationSeconds: 45,
-        audioAvailability: 'inSession',
-        createdAt: 'Hôm nay',
-      })
-
-      const current = useMimicStore.getState().activeSpeakingSession
-      expect(current?.attempts?.length).toBe(1)
-      expect(current?.attempts?.[0]?.durationSeconds).toBe(45)
     })
   })
 

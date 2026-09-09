@@ -54,4 +54,40 @@ class LearnerProfileEntity {
     this.createdAt = now;
     this.updatedAt = now;
   }
+
+  UUID userId() {
+    return userId;
+  }
+
+  String name() {
+    return name;
+  }
+
+  String targetLanguage() {
+    return targetLanguage;
+  }
+
+  String goal() {
+    return goal;
+  }
+
+  String selfAssessedLevel() {
+    return selfAssessedLevel;
+  }
+
+  Integer dailyMinutesGoal() {
+    return dailyMinutesGoal;
+  }
+
+  String timezone() {
+    return timezone;
+  }
+
+  Instant onboardingCompletedAt() {
+    return onboardingCompletedAt;
+  }
+
+  long version() {
+    return version;
+  }
 }

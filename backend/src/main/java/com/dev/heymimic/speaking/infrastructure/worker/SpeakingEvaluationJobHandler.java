@@ -1,0 +1,110 @@
+package com.dev.heymimic.speaking.infrastructure.worker;
+
+import com.dev.heymimic.platform.application.publicapi.ClaimedJob;
+import com.dev.heymimic.platform.application.publicapi.JobHandler;
+import com.dev.heymimic.platform.application.publicapi.NonRetryableJobException;
+import com.dev.heymimic.platform.application.publicapi.RetryableJobException;
+import com.dev.heymimic.speaking.application.port.SpeakingFeedbackPort;
+import com.dev.heymimic.speaking.application.port.SpeakingFeedbackRequest;
+import com.dev.heymimic.speaking.application.port.SpeakingFeedbackResult;
+import com.dev.heymimic.speaking.application.port.SpeakingProviderException;
+import com.dev.heymimic.speaking.application.port.SpeakingTranscriptionPort;
+import com.dev.heymimic.speaking.application.port.SpeakingTranscriptionRequest;
+import com.dev.heymimic.speaking.application.port.SpeakingTranscriptionResult;
+import com.dev.heymimic.speaking.application.publicapi.PreparedSpeakingEvaluation;
+import com.dev.heymimic.speaking.application.publicapi.SpeakingEvaluationWorkflow;
+import com.dev.heymimic.speaking.domain.SpeakingEvaluationStage;
+import java.util.Optional;
+import org.springframework.stereotype.Component;
+
+@Component
+public class SpeakingEvaluationJobHandler implements JobHandler {
+  private final SpeakingEvaluationWorkflow workflow;
+  private final SpeakingTranscriptionPort transcription;
+  private final SpeakingFeedbackPort feedback;
+
+  public SpeakingEvaluationJobHandler(
+      SpeakingEvaluationWorkflow workflow,
+      SpeakingTranscriptionPort transcription,
+      SpeakingFeedbackPort feedback) {
+    this.workflow = workflow;
+    this.transcription = transcription;
+    this.feedback = feedback;
+  }
+
+  @Override
+  public String jobType() {
+    return SpeakingEvaluationWorkflow.JOB_TYPE;
+  }
+
+  @Override
+  public void handle(ClaimedJob job) {
+    var prepared = workflow.prepare(job.resourceId(), job.ownerUserId());
+    if (prepared.isEmpty()) return;
+    var evaluation = prepared.orElseThrow();
+    if (evaluation.stage() == SpeakingEvaluationStage.TRANSCRIBING) {
+      var transcript = transcribe(evaluation);
+      var checkpoint = saveTranscript(evaluation, transcript);
+      if (checkpoint.isEmpty()) return;
+      evaluation = checkpoint.orElseThrow();
+    }
+    if (evaluation.stage() == SpeakingEvaluationStage.FEEDBACK) {
+      complete(evaluation, evaluateFeedback(evaluation));
+    }
+  }
+
+  private SpeakingTranscriptionResult transcribe(PreparedSpeakingEvaluation evaluation) {
+    try {
+      return transcription.transcribe(
+          new SpeakingTranscriptionRequest(
+              evaluation.objectKey(),
+              evaluation.objectVersion(),
+              evaluation.mimeType(),
+              evaluation.durationMs()));
+    } catch (SpeakingProviderException exception) {
+      throw providerFailure("STT", exception);
+    }
+  }
+
+  private Optional<PreparedSpeakingEvaluation> saveTranscript(
+      PreparedSpeakingEvaluation evaluation, SpeakingTranscriptionResult transcript) {
+    try {
+      return workflow.saveTranscript(evaluation, transcript);
+    } catch (IllegalArgumentException exception) {
+      throw new NonRetryableJobException(
+          "STT_INVALID_RESPONSE", "Transcription provider returned an invalid response", exception);
+    }
+  }
+
+  private SpeakingFeedbackResult evaluateFeedback(PreparedSpeakingEvaluation evaluation) {
+    try {
+      return feedback.evaluate(
+          new SpeakingFeedbackRequest(
+              evaluation.transcript(), evaluation.promptSnapshotJson(), evaluation.durationMs()));
+    } catch (SpeakingProviderException exception) {
+      throw providerFailure("FEEDBACK", exception);
+    }
+  }
+
+  private void complete(PreparedSpeakingEvaluation evaluation, SpeakingFeedbackResult result) {
+    try {
+      workflow.complete(evaluation, result);
+    } catch (IllegalArgumentException exception) {
+      throw new NonRetryableJobException(
+          "FEEDBACK_INVALID_RESPONSE", "Feedback provider returned an invalid response", exception);
+    }
+  }
+
+  private RuntimeException providerFailure(String stage, SpeakingProviderException exception) {
+    String errorCode = stage + "_" + exception.failure().name();
+    if (exception.failure().retryable()) {
+      return new RetryableJobException(errorCode, exception.getMessage(), exception);
+    }
+    return new NonRetryableJobException(errorCode, exception.getMessage(), exception);
+  }
+
+  @Override
+  public void onFinalFailure(ClaimedJob job, String errorCode) {
+    workflow.failFinal(job.resourceId(), job.ownerUserId(), errorCode);
+  }
+}

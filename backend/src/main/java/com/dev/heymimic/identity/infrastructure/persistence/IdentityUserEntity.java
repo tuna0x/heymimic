@@ -88,4 +88,11 @@ class IdentityUserEntity {
     authVersion++;
     updatedAt = now;
   }
+
+  void requestDeletion(Instant now) {
+    status = UserStatus.DELETING;
+    deletionRequestedAt = now;
+    authVersion++;
+    updatedAt = now;
+  }
 }

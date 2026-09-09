@@ -27,16 +27,20 @@ export function Signup() {
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       return setError('Vui lòng nhập địa chỉ email hợp lệ.')
     }
-    if (password.length < 6) {
-      return setError('Mật khẩu cần ít nhất 6 ký tự.')
+    if (password.length < 12) {
+      return setError('Mật khẩu cần ít nhất 12 ký tự.')
     }
 
     setLoading(true)
     setError('')
     try {
       await signup(name, email, password)
-      // Navigate to onboarding wizard as per spec 5.2 & A02
-      navigate('/onboarding')
+      navigate('/login', {
+        replace: true,
+        state: {
+          notice: 'Tài khoản đã được tạo. Hãy xác minh email trước khi đăng nhập.',
+        },
+      })
     } catch {
       setError('Đăng ký thất bại. Vui lòng thử lại.')
     } finally {

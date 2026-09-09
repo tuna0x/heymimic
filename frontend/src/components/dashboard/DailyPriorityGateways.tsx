@@ -4,7 +4,7 @@ import type { SpeakingTopic, VocabWord } from '../../type'
 
 interface DailyPriorityGatewaysProps {
   vocabWords: VocabWord[]
-  targetTopic: SpeakingTopic
+  targetTopic?: SpeakingTopic
 }
 
 export function DailyPriorityGateways({ vocabWords, targetTopic }: DailyPriorityGatewaysProps) {
@@ -78,10 +78,10 @@ export function DailyPriorityGateways({ vocabWords, targetTopic }: DailyPriority
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
             <div>
               <h3 className="text-lg font-display font-semibold text-study-text group-hover:text-study-accent transition-colors leading-snug">
-                {targetTopic.title}
+                {targetTopic?.title ?? 'Chưa có chủ đề Speaking khả dụng'}
               </h3>
               <p className="text-xs text-study-text-muted mt-1.5 leading-relaxed max-w-sm">
-                {targetTopic.prompt}
+                {targetTopic?.prompt ?? 'Backend chưa trả về chủ đề phù hợp cho hồ sơ hiện tại.'}
               </p>
             </div>
 

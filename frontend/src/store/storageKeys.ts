@@ -28,6 +28,15 @@ export function safeJsonParse<T>(key: string, fallback: T): T {
   }
 }
 
+export function clearUserScopedStorage(): void {
+  if (typeof window === 'undefined') return
+  Object.values(STORAGE_KEYS).forEach((key) => {
+    if (key !== STORAGE_KEYS.THEME && key !== STORAGE_KEYS.SIDEBAR_COLLAPSED) {
+      localStorage.removeItem(key)
+    }
+  })
+}
+
 export function getInitialTheme(): ThemeMode {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem(STORAGE_KEYS.THEME) as ThemeMode | null

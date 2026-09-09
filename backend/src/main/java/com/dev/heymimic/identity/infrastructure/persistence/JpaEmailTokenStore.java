@@ -40,6 +40,12 @@ public class JpaEmailTokenStore implements EmailTokenStore {
     token.consume(now);
   }
 
+  @Override
+  public void deleteAllForUser(UUID userId) {
+    repository.deleteByUserId(userId);
+    repository.flush();
+  }
+
   private EmailTokenRecord toRecord(IdentityEmailTokenEntity token) {
     return new EmailTokenRecord(
         token.id(), token.userId(), token.purpose(), token.expiresAt(), token.consumedAt());

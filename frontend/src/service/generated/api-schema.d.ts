@@ -708,6 +708,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_6"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -1114,8 +1146,10 @@ export interface components {
             /** Format: int64 */
             expectedVersion?: number;
         };
+        /** @enum {string} */
+        MistakeStatus: "active" | "resolved" | "ignored";
         UpdateMistakeStatusRequest: {
-            status: string;
+            status: components["schemas"]["MistakeStatus"];
             /** Format: int64 */
             expectedVersion?: number;
         };
@@ -1127,7 +1161,8 @@ export interface components {
             taxonomyVersion?: string;
             title?: string;
             explanation?: string;
-            status?: string;
+            status?: components["schemas"]["MistakeStatus"];
+            evidenceStage?: string;
             /** Format: int64 */
             occurrenceCount?: number;
             /** Format: int64 */
@@ -1275,6 +1310,33 @@ export interface components {
             /** Format: date-time */
             projectedThrough?: string;
             pendingProjection?: boolean;
+        };
+        QuotaUsageResponse: {
+            /** Format: int32 */
+            limit?: number;
+            /** Format: int32 */
+            used?: number;
+            /** Format: int32 */
+            remaining?: number;
+            /** Format: date-time */
+            resetAt?: string;
+        };
+        UsageResponse: {
+            operations?: {
+                [key: string]: components["schemas"]["QuotaUsageResponse"];
+            };
+        };
+        CapabilitiesResponse: {
+            features?: {
+                [key: string]: components["schemas"]["FeatureCapabilityResponse"];
+            };
+            limits?: {
+                [key: string]: number;
+            };
+        };
+        FeatureCapabilityResponse: {
+            enabled?: boolean;
+            reason?: string;
         };
         CsrfToken: {
             headerName?: string;
@@ -2445,6 +2507,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    get_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UsageResponse"];
+                };
+            };
+        };
+    };
+    get_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CapabilitiesResponse"];
+                };
             };
         };
     };

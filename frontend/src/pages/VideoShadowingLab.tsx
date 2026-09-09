@@ -142,7 +142,8 @@ export function VideoShadowingLab() {
       segmentId: selectedSegment.id,
       audioUrl: audioUrl || undefined,
       score: 93,
-      feedback: 'Khớp 93% ngữ điệu và nối âm tự nhiên',
+      source: 'demo',
+      feedback: 'Bản demo giao diện — chưa có đánh giá âm thanh thật.',
       createdAt: new Date().toISOString(),
     })
   }
@@ -380,14 +381,14 @@ export function VideoShadowingLab() {
                   <div>
                     <div className="flex items-center gap-2">
                       <strong className="text-sm font-semibold text-study-text">
-                        Độ khớp ngữ điệu: 94%
+                        Kết quả minh họa: 94%
                       </strong>
                       <span className="px-2 py-0.5 rounded bg-study-success text-white text-[10px] font-bold">
-                        RẤT TỰ NHIÊN
+                        DEMO
                       </span>
                     </div>
                     <p className="text-xs text-study-text-muted mt-0.5">
-                      Cao độ và thời gian ngắt nghỉ của bạn rất sát với diễn giả {clip.speaker}.
+                      Điểm này chỉ minh họa giao diện; chưa phải kết quả chấm âm thanh thật.
                     </p>
                   </div>
                 </div>

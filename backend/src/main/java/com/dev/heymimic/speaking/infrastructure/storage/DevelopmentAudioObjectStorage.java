@@ -1,5 +1,6 @@
 package com.dev.heymimic.speaking.infrastructure.storage;
 
+import com.dev.heymimic.speaking.application.port.AudioObjectBytes;
 import com.dev.heymimic.speaking.application.port.AudioObjectStorage;
 import com.dev.heymimic.speaking.application.port.AudioPlaybackGrant;
 import com.dev.heymimic.speaking.application.port.AudioUploadGrant;
@@ -37,6 +38,12 @@ public class DevelopmentAudioObjectStorage implements AudioObjectStorage {
     return new AudioPlaybackGrant(
         "https://storage.invalid/heymimic-development/" + encodedKey + "?version=" + objectVersion,
         expiresAt);
+  }
+
+  @Override
+  public AudioObjectBytes read(String objectKey, String objectVersion) {
+    throw new IllegalStateException(
+        "Development fake storage has no uploaded bytes to read; configure a real storage adapter");
   }
 
   @Override

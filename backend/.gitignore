@@ -1,5 +1,7 @@
 HELP.md
 target/
+load-tests/*.local.json
+load-tests/results/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

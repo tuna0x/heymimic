@@ -24,6 +24,14 @@ heymimic:
     access-token-ttl: 10m
     private-key: ${SECURITY_JWT_PRIVATE_KEY:}
     public-key: ${SECURITY_JWT_PUBLIC_KEY:}
+  identity:
+    email:
+      provider: ${IDENTITY_EMAIL_PROVIDER:in-memory}
+      api-key: ${RESEND_API_KEY:}
+      from-address: ${IDENTITY_EMAIL_FROM:}
+      public-app-url: ${PUBLIC_APP_URL:http://localhost:5173}
+      api-base-url: ${RESEND_API_BASE_URL:https://api.resend.com}
+      request-timeout: ${IDENTITY_EMAIL_REQUEST_TIMEOUT:PT10S}
   jobs:
     enabled: ${JOBS_ENABLED:true}
     worker-id: ${HOSTNAME:local}
@@ -47,6 +55,24 @@ heymimic:
     daily-limits:
       SPEAKING_EVALUATION: 20
       CONTEXT_ANALYSIS: 20
+  provider-budget:
+    enabled: ${PROVIDER_BUDGET_ENABLED:false}
+    daily-limit-micros: ${PROVIDER_BUDGET_DAILY_LIMIT_MICROS:0}
+    rate-card-version: ${PROVIDER_BUDGET_RATE_CARD_VERSION:alpha-2026-09}
+    estimated-cost-micros:
+      "SPEAKING_EVALUATION.STT": ${PROVIDER_BUDGET_SPEAKING_STT_MICROS:0}
+      "SPEAKING_EVALUATION.FEEDBACK": ${PROVIDER_BUDGET_SPEAKING_FEEDBACK_MICROS:0}
+      "CONTEXT_ANALYSIS.EXTRACTION": ${PROVIDER_BUDGET_CONTEXT_EXTRACTION_MICROS:0}
+    input-token-micros-per-million: ${PROVIDER_RATE_INPUT_MICROS_PER_MILLION:0}
+    output-token-micros-per-million: ${PROVIDER_RATE_OUTPUT_MICROS_PER_MILLION:0}
+    audio-micros-per-minute: ${PROVIDER_RATE_AUDIO_MICROS_PER_MINUTE:0}
+    character-micros-per-thousand: ${PROVIDER_RATE_CHARACTER_MICROS_PER_THOUSAND:0}
+  features:
+    remediation: ${FEATURE_REMEDIATION:false}
+    content-practice: ${FEATURE_CONTENT_PRACTICE:false}
+    daily-plan: ${FEATURE_DAILY_PLAN:false}
+    dialogue: ${FEATURE_DIALOGUE:false}
+    learning-evidence: ${FEATURE_LEARNING_EVIDENCE:false}
   vocabulary:
     context-analysis-cleanup:
       enabled: ${CONTEXT_ANALYSIS_CLEANUP_ENABLED:true}
@@ -58,9 +84,37 @@ heymimic:
       inactivity-timeout: ${REVIEW_SESSION_INACTIVITY_TIMEOUT:PT24H}
       batch-size: ${REVIEW_SESSION_CLEANUP_BATCH_SIZE:100}
   speaking:
+    storage:
+      provider: ${AUDIO_STORAGE_PROVIDER:s3}
+      bucket: ${AUDIO_S3_BUCKET:}
+      region: ${AWS_REGION:}
+      endpoint: ${AUDIO_S3_ENDPOINT:}
+      path-style: ${AUDIO_S3_PATH_STYLE:false}
+      request-timeout: ${AUDIO_S3_REQUEST_TIMEOUT:PT15S}
+      upload-ttl: ${AUDIO_UPLOAD_TTL:PT10M}
+      playback-ttl: ${AUDIO_PLAYBACK_TTL:PT1M}
+      max-object-bytes: ${AUDIO_MAX_OBJECT_BYTES:20971520}
+      ffprobe-command: ${FFPROBE_COMMAND:ffprobe}
+      ffprobe-timeout: ${FFPROBE_TIMEOUT:PT10S}
+    transcription:
+      provider: ${STT_PROVIDER:deepgram}
+      api-key: ${DEEPGRAM_API_KEY:}
+      model: ${STT_MODEL:nova-3}
+      api-base-url: ${DEEPGRAM_API_BASE_URL:https://api.deepgram.com}
+      request-timeout: ${STT_REQUEST_TIMEOUT:PT30S}
     fake-storage: ${SPEAKING_FAKE_STORAGE:false}
     fake-evaluation: ${SPEAKING_FAKE_EVALUATION:false}
     audio-retention-cleanup:
       enabled: ${SPEAKING_AUDIO_RETENTION_CLEANUP_ENABLED:true}
       interval: ${SPEAKING_AUDIO_RETENTION_CLEANUP_INTERVAL:PT1H}
       batch-size: ${SPEAKING_AUDIO_RETENTION_CLEANUP_BATCH_SIZE:100}
+
+  ai:
+    provider: ${AI_PROVIDER:in-memory}
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${ANTHROPIC_MODEL:claude-haiku-4-5-20251001}
+    api-base-url: ${ANTHROPIC_API_BASE_URL:https://api.anthropic.com}
+    request-timeout: ${AI_REQUEST_TIMEOUT:PT30S}
+    max-output-tokens: ${AI_MAX_OUTPUT_TOKENS:1200}
+    prompt-version: ${AI_PROMPT_VERSION:claude-speaking-feedback-v1}
+    rubric-version: ${AI_RUBRIC_VERSION:general-speaking-v1}

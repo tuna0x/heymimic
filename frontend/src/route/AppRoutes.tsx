@@ -15,6 +15,7 @@ const Landing = lazy(() => import('../pages/marketing/Landing').then((m) => ({ d
 const Login = lazy(() => import('../pages/marketing/Login').then((m) => ({ default: m.Login })))
 const Signup = lazy(() => import('../pages/marketing/Signup').then((m) => ({ default: m.Signup })))
 const ForgotPassword = lazy(() => import('../pages/marketing/ForgotPassword').then((m) => ({ default: m.ForgotPassword })))
+const VerifyEmail = lazy(() => import('../pages/marketing/VerifyEmail').then((m) => ({ default: m.VerifyEmail })))
 const ResetPassword = lazy(() => import('../pages/marketing/ResetPassword').then((m) => ({ default: m.ResetPassword })))
 const Terms = lazy(() => import('../pages/marketing/Terms').then((m) => ({ default: m.Terms })))
 const Privacy = lazy(() => import('../pages/marketing/Privacy').then((m) => ({ default: m.Privacy })))
@@ -56,6 +57,7 @@ export function AppRoutes() {
           <Route path={ROUTES.LOGIN} element={<Login />} />
           <Route path={ROUTES.SIGNUP} element={<Signup />} />
           <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
+          <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmail />} />
           <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
           <Route path={ROUTES.TERMS} element={<Terms />} />
           <Route path={ROUTES.PRIVACY} element={<Privacy />} />

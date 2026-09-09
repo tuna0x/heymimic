@@ -1,5 +1,6 @@
 package com.dev.heymimic.progress.application.publicapi;
 
+import com.dev.heymimic.progress.domain.MistakeStatus;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -10,7 +11,8 @@ public record MistakePatternView(
     String taxonomyVersion,
     String title,
     String explanation,
-    String status,
+    MistakeStatus status,
+    String evidenceStage,
     long occurrenceCount,
     long version,
     Instant firstSeenAt,

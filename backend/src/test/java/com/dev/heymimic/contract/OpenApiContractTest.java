@@ -13,12 +13,18 @@ import com.dev.heymimic.identity.application.publicapi.IdentityAuthentication;
 import com.dev.heymimic.identity.application.publicapi.PasswordRecoveryWorkflow;
 import com.dev.heymimic.identity.application.publicapi.UserRegistration;
 import com.dev.heymimic.identity.application.publicapi.VerificationWorkflow;
+import com.dev.heymimic.learner.api.CapabilityController;
 import com.dev.heymimic.learner.api.MeController;
+import com.dev.heymimic.learner.api.UsageController;
 import com.dev.heymimic.learner.application.publicapi.LearnerProfiles;
+import com.dev.heymimic.platform.application.port.QuotaStore;
+import com.dev.heymimic.platform.infrastructure.config.QuotaConfiguration;
 import com.dev.heymimic.progress.api.ProgressController;
 import com.dev.heymimic.progress.application.publicapi.MistakeQueries;
 import com.dev.heymimic.progress.application.publicapi.ProgressQueries;
+import com.dev.heymimic.shared.config.FeatureConfiguration;
 import com.dev.heymimic.shared.config.OpenApiConfiguration;
+import com.dev.heymimic.shared.config.TimeConfiguration;
 import com.dev.heymimic.speaking.api.SpeakingSessionController;
 import com.dev.heymimic.speaking.application.publicapi.SpeakingAttempts;
 import com.dev.heymimic.speaking.application.publicapi.SpeakingEvaluations;
@@ -69,6 +75,7 @@ class OpenApiContractTest {
   @MockitoBean ContextAnalyses contextAnalyses;
   @MockitoBean ReviewSessions reviewSessions;
   @MockitoBean VocabularyWords vocabularyWords;
+  @MockitoBean QuotaStore quotaStore;
 
   @Test
   void exportsAllCoreModulePaths(@Autowired MockMvc mvc) throws Exception {
@@ -82,6 +89,8 @@ class OpenApiContractTest {
             .andExpect(jsonPath("$.paths['/api/v1/speaking/sessions']").exists())
             .andExpect(jsonPath("$.paths['/api/v1/study-sessions']").exists())
             .andExpect(jsonPath("$.paths['/api/v1/progress/daily']").exists())
+            .andExpect(jsonPath("$.paths['/api/v1/me/capabilities']").exists())
+            .andExpect(jsonPath("$.paths['/api/v1/me/usage']").exists())
             .andReturn()
             .getResponse()
             .getContentAsString(StandardCharsets.UTF_8);
@@ -108,10 +117,15 @@ class OpenApiContractTest {
         FlywayAutoConfiguration.class
       })
   @Import({
+    FeatureConfiguration.class,
     OpenApiConfiguration.class,
+    QuotaConfiguration.class,
+    TimeConfiguration.class,
     AccountLifecycleController.class,
     AuthController.class,
     MeController.class,
+    CapabilityController.class,
+    UsageController.class,
     ProgressController.class,
     SpeakingSessionController.class,
     StudySessionController.class,

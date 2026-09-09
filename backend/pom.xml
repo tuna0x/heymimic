@@ -33,6 +33,7 @@
 		<spotless.version>2.46.1</spotless.version>
 		<maven-failsafe.version>3.5.6</maven-failsafe.version>
 		<springdoc.version>3.0.3</springdoc.version>
+		<aws.sdk.version>2.31.29</aws.sdk.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -54,6 +55,11 @@
 		<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-flyway</artifactId></dependency>
 		<dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency>
 		<dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><version>1.81</version></dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>${aws.sdk.version}</version>
+		</dependency>
 		<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-configuration-processor</artifactId><optional>true</optional></dependency>
 
 		<dependency>

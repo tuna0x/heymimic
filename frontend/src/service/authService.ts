@@ -57,6 +57,37 @@ export const authService = {
     const profile = await apiClient<LearnerProfileResponse>('/me')
     return toLearnerProfile(profile)
   },
+  async verifyEmail(token: string): Promise<void> {
+    await apiClient<void>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+      skipAuthRefresh: true,
+    })
+  },
+
+  async resendVerification(email: string): Promise<void> {
+    await apiClient<void>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      skipAuthRefresh: true,
+    })
+  },
+
+  async forgotPassword(email: string): Promise<void> {
+    await apiClient<void>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      skipAuthRefresh: true,
+    })
+  },
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    await apiClient<void>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword: password }),
+      skipAuthRefresh: true,
+    })
+  },
 
   async logout(): Promise<void> {
     try {

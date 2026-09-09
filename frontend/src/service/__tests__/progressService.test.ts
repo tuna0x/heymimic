@@ -18,7 +18,7 @@ describe('progressService', () => {
         category: 'grammar',
         title: 'Articles',
         explanation: 'Use an article before singular nouns.',
-        status: 'needsPractice',
+        status: 'active',
         occurrenceCount: 2,
         version: 3,
       },
@@ -36,7 +36,7 @@ describe('progressService', () => {
 
     await expect(progressService.getMistake('pattern-1')).resolves.toMatchObject({
       id: 'pattern-1',
-      status: 'needsPractice',
+      status: 'active',
       count: 2,
       version: 3,
       occurrences: [
@@ -55,7 +55,7 @@ describe('progressService', () => {
       category: 'grammar',
       title: 'Articles',
       explanation: 'Explanation',
-      status: 'improving',
+      status: 'resolved',
       occurrenceCount: 1,
       version: 5,
     })
@@ -66,17 +66,17 @@ describe('progressService', () => {
         category: 'grammar',
         title: 'Articles',
         explanation: 'Explanation',
-        status: 'needsPractice',
+        status: 'active',
         count: 1,
         occurrences: [],
         version: 4,
       },
-      'improving'
+      'active'
     )
 
     expect(apiClient).toHaveBeenCalledWith('/progress/mistakes/pattern-1', {
       method: 'PATCH',
-      body: JSON.stringify({ status: 'improving', expectedVersion: 4 }),
+      body: JSON.stringify({ status: 'active', expectedVersion: 4 }),
     })
   })
 })

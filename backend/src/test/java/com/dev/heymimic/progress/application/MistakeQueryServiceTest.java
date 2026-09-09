@@ -34,7 +34,7 @@ class MistakeQueryServiceTest {
 
     var result = service.updateStatus(userId, patternId, "resolved", 2);
 
-    assertThat(result.status()).isEqualTo("resolved");
+    assertThat(result.status()).isEqualTo(MistakeStatus.RESOLVED);
     assertThat(result.version()).isEqualTo(3);
     assertThat(result.occurrenceCount()).isEqualTo(4);
   }

@@ -48,5 +48,6 @@ that operational contract.
 ## Remaining platform hardening
 
 Typed idempotency and quota reservation services are implemented and documented in ADR 0003.
-Audited replay for final deliveries, retention cleanup, worker metrics and broader load tests remain
-release-hardening increments. Their table or interface presence alone does not mark them complete.
+Audited replay for final deliveries is implemented by the internal command documented in ADR 0025.
+Retention cleanup and worker/queue metrics are also implemented. Restore drills, production release
+evidence and broader load tests remain release-hardening increments.

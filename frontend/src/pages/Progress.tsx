@@ -101,9 +101,16 @@ export function Progress() {
   }
 
   const statusLabels: Record<MistakePattern['status'], { label: string; color: string }> = {
-    needsPractice: { label: 'Cần luyện', color: 'bg-rose-500/10 text-rose-600 border-rose-500/20' },
-    improving: { label: 'Đang cải thiện', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-    mastered: { label: 'Đã làm chủ', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+    active: { label: 'Đang theo dõi', color: 'bg-rose-500/10 text-rose-600 border-rose-500/20' },
+    resolved: { label: 'Đã xử lý', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+    ignored: { label: 'Đã ẩn', color: 'bg-study-surface-muted text-study-text-muted border-study-border' },
+  }
+
+  const evidenceStageLabels: Record<NonNullable<MistakePattern['evidenceStage']>, string> = {
+    notPracticed: 'chưa có lượt nói lại',
+    practicing: 'đang luyện lại',
+    improving: 'đang cải thiện',
+    demonstrated: 'đã thể hiện ở nhiều ngữ cảnh',
   }
 
   const levelDisplay = {
@@ -375,7 +382,7 @@ export function Progress() {
                 <Filter size={13} />
                 <span>Trạng thái:</span>
               </span>
-              {(['all', 'needsPractice', 'improving', 'mastered'] as const).map((status) => (
+              {(['all', 'active', 'resolved', 'ignored'] as const).map((status) => (
                 <button
                   key={status}
                   type="button"
@@ -450,7 +457,7 @@ export function Progress() {
                     </h3>
 
                     <p className="text-xs text-study-text-muted leading-relaxed line-clamp-2">
-                      {mistake.explanation}
+                      {mistake.explanation} · <span className="font-medium">{evidenceStageLabels[mistake.evidenceStage ?? 'notPracticed']}</span>
                     </p>
 
                     {/* Example snippet */}

@@ -1,5 +1,6 @@
 package com.dev.heymimic.platform.infrastructure.config;
 
+import com.dev.heymimic.platform.application.publicapi.QuotaLimits;
 import com.dev.heymimic.platform.application.publicapi.QuotaPolicy;
 import com.dev.heymimic.shared.error.ApiException;
 import jakarta.validation.Valid;
@@ -17,6 +18,11 @@ import org.springframework.validation.annotation.Validated;
 @Configuration
 @EnableConfigurationProperties(QuotaConfiguration.Properties.class)
 public class QuotaConfiguration {
+  @Bean
+  QuotaLimits quotaLimits(Properties properties) {
+    return properties::dailyLimits;
+  }
+
   @Bean
   QuotaPolicy quotaPolicy(Properties properties) {
     return quotaKind -> {

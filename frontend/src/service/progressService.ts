@@ -45,8 +45,13 @@ function categoryOf(value?: string): MistakePattern['category'] {
 }
 
 function statusOf(value?: string): MistakePattern['status'] {
-  if (value === 'improving' || value === 'mastered') return value
-  return 'needsPractice'
+  if (value === 'resolved' || value === 'ignored') return value
+  return 'active'
+}
+
+function evidenceStageOf(value?: string): NonNullable<MistakePattern['evidenceStage']> {
+  if (value === 'practicing' || value === 'improving' || value === 'demonstrated') return value
+  return 'notPracticed'
 }
 
 function toMistakePattern(dto: MistakePatternDto): MistakePattern {
@@ -56,6 +61,7 @@ function toMistakePattern(dto: MistakePatternDto): MistakePattern {
     title: dto.title ?? '',
     explanation: dto.explanation ?? '',
     status: statusOf(dto.status),
+    evidenceStage: evidenceStageOf(dto.evidenceStage),
     count: dto.occurrenceCount ?? 0,
     occurrences: [],
     version: dto.version ?? 0,
@@ -150,11 +156,12 @@ export const progressService = {
     pattern: MistakePattern,
     status: MistakePattern['status']
   ): Promise<MistakePattern> {
+    const wireStatus = status === 'resolved' || status === 'ignored' ? status : 'active'
     const response = await apiClient<MistakePatternDto>(
       `/progress/mistakes/${pattern.id}`,
       {
         method: 'PATCH',
-        body: JSON.stringify({ status, expectedVersion: pattern.version ?? 0 }),
+        body: JSON.stringify({ status: wireStatus, expectedVersion: pattern.version ?? 0 }),
       }
     )
     return {

@@ -7,6 +7,7 @@ import com.dev.heymimic.progress.application.publicapi.MistakePatternView;
 import com.dev.heymimic.progress.application.publicapi.MistakeQueries;
 import com.dev.heymimic.progress.application.publicapi.ProgressOverviewView;
 import com.dev.heymimic.progress.application.publicapi.ProgressQueries;
+import com.dev.heymimic.progress.domain.MistakeStatus;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -48,11 +49,16 @@ public class ProgressController {
   @GetMapping("/mistakes")
   MistakePatternPageView mistakes(
       @AuthenticationPrincipal Jwt jwt,
-      @RequestParam(required = false) String status,
+      @RequestParam(required = false) MistakeStatus status,
       @RequestParam(required = false) String category,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    return mistakes.find(UUID.fromString(jwt.getSubject()), status, category, page, size);
+    return mistakes.find(
+        UUID.fromString(jwt.getSubject()),
+        status == null ? null : status.apiValue(),
+        category,
+        page,
+        size);
   }
 
   @GetMapping("/mistakes/{patternId}")
@@ -70,6 +76,9 @@ public class ProgressController {
       @PathVariable UUID patternId,
       @Valid @RequestBody UpdateMistakeStatusRequest request) {
     return mistakes.updateStatus(
-        UUID.fromString(jwt.getSubject()), patternId, request.status(), request.expectedVersion());
+        UUID.fromString(jwt.getSubject()),
+        patternId,
+        request.status().apiValue(),
+        request.expectedVersion());
   }
 }

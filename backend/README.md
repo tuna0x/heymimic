@@ -227,6 +227,18 @@ the parent. See `docs/adr/0020-study-lifecycle-orchestration.md`.
 Surefire runs unit and architecture tests. Failsafe runs integration tests named `*IT` with
 Testcontainers and PostgreSQL. Docker must be running for integration tests.
 
+## Restore drill
+
+`scripts/invoke-postgres-restore-drill.ps1` creates a custom-format backup from the local Compose
+PostgreSQL service, restores it into a generated isolated database, validates Flyway/audio metadata
+and writes checksum/timing evidence under `target/restore-drill`. The restored database is kept by
+default for inspection. See `docs/runbooks/postgresql-restore-drill.md` for the safety boundary,
+storage reconciliation and production-like evidence requirements.
+
+The k6 speaking load-test harness is at backend/load-tests/speaking-evaluation.js; its controlled-run
+procedure and guardrails are documented in docs/runbooks/speaking-load-test.md. Release approval
+uses docs/runbooks/release-checklist.md.
+
 ## Platform runtime
 
 B01 currently provides a PostgreSQL-backed job queue and transactional outbox/event dispatcher.
@@ -246,6 +258,17 @@ consumers are at-least-once and must be idempotent. See
 PostgreSQL advisory lock. Daily limits are controlled only by the validated
 `heymimic.quotas.daily-limits` map. See `docs/adr/0003-idempotency-and-quota-guards.md`.
 
+## Audited event-delivery replay
+
+`EventDeliveryReplay` is a trusted internal application command and is not exposed through HTTP.
+Only `FAILED_FINAL` deliveries are eligible. Every missing, rejected, dry-run or successful
+request writes `platform_delivery_replay_audit` with the operator identity, reason and original
+failure metadata. Run a dry-run first, then replay only after the consumer fix has been deployed.
+Replay keeps the original event identity, clears lease/error state and grants a fresh retry budget.
+
+Do not place credentials, signed URLs, transcripts or payloads in the replay reason. Detailed
+procedure and trade-offs are in `docs/adr/0025-audited-event-delivery-replay.md`.
+
 ## Version baseline
 
 | Tool | Pinned/tested version |
@@ -259,5 +282,36 @@ PostgreSQL advisory lock. Daily limits are controlled only by the validated
 | Spotless Maven Plugin | 2.46.1 |
 | Maven Failsafe | 3.5.6 |
 | Bouncy Castle | 1.81 |
+| AWS SDK S3 | 2.31.29 |
 
 Versions managed by the Spring Boot BOM are not overridden without an ADR.
+
+## Resend identity email adapter
+
+Dev and test profiles keep the in-memory sender so local auth tests never send mail. Staging and
+production can set IDENTITY_EMAIL_PROVIDER=resend; the adapter requires RESEND_API_KEY,
+IDENTITY_EMAIL_FROM and PUBLIC_APP_URL before the application starts. Verification and reset
+links contain only the one-time token in the URL; provider failures map to retryable, rate-limited
+or terminal job outcomes without logging the token. See docs/adr/0026-resend-identity-email.md.
+
+## Claude language provider adapter
+
+Dev/test keep the deterministic extraction and speaking evaluation adapters. Staging and production can
+set AI_PROVIDER=anthropic; the application then requires ANTHROPIC_API_KEY and ANTHROPIC_MODEL and
+calls Claude through the server-side Messages API client. ANTHROPIC_API_BASE_URL can point to a local
+HTTP fixture for contract tests, while AI_REQUEST_TIMEOUT and AI_MAX_OUTPUT_TOKENS bound each request.
+
+The vocabulary and speaking adapters request JSON only and validate the response before returning the
+application ports. Rate limits, timeouts and 5xx responses are retryable; authentication, rejected
+requests and malformed model output are terminal. The adapters never log source text, transcript,
+prompt or API key. Configure the provider on staging only after a smoke test with a spend cap. See
+docs/adr/0027-anthropic-provider-adapters.md and the official
+Anthropic Messages API reference: https://docs.anthropic.com/en/api/messages.
+
+Staging and production can use the versioned S3 storage and Deepgram prerecorded adapter. S3
+inspection reads the sealed object version, computes SHA-256, identifies the container with ffprobe
+and rejects version drift; Deepgram receives bytes only after that seal. Dev/test still use fake
+storage/evaluation. Orphan cleanup, browser recovery and real provider smoke tests remain open. See
+docs/adr/0028-versioned-s3-deepgram-audio.md.
+
+Provider calls are recorded in platform_provider_usage by operation, stage and worker execution attempt. Successful calls keep provider request-id and usage metadata when available; timeouts or uncertain outcomes are recorded as UNKNOWN for later reconciliation. When enabled, workers reserve a configured global rate-card budget before provider calls and reconcile known usage afterward; UNKNOWN keeps its reservation. See docs/adr/0029-provider-usage-receipts.md and docs/adr/0030-provider-budget-reservation-reconciliation.md.

@@ -1,21 +1,21 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
+  Check,
   Clock,
-  Globe2,
+  Copy,
   HeartHandshake,
-  MessageSquare,
   Play,
   Radio,
   Search,
   ShieldCheck,
-  Sparkles,
   Star,
   Users2,
-  Zap,
 } from 'lucide-react'
-import { SectionLabel } from '../components/shared/UI'
 import { usePageMeta } from '../hook/usePageMeta'
+import { useAuth } from '../context/AuthContext'
+import { describeApiError, getAccessToken } from '../service/api'
+import { peerService, toPeerTopic, type PeerSessionDto } from '../service/peerService'
 import { useMimicStore } from '../store/useMimicStore'
 import { ROUTES } from '../route/routePaths'
 import type { PeerPartner, PeerTopic } from '../type'
@@ -27,26 +27,105 @@ export function PeerPractice() {
   )
 
   const navigate = useNavigate()
-  const { peerTopics, peerPartners, peerSessions, startPeerSession } = useMimicStore()
+  const location = useLocation()
+  const { isAuthenticated } = useAuth()
+  const { peerTopics, peerPartners, peerSessions, activePeerSession, startPeerSession } = useMimicStore()
+  const canUseServer = isAuthenticated && Boolean(getAccessToken())
 
-  const [selectedTopicId, setSelectedTopicId] = useState<string>(peerTopics[0]?.id ?? '')
+  const stateTopicId = (location.state as { topicId?: string } | null)?.topicId
+  const queryTopicId = new URLSearchParams(location.search).get('topic') ?? undefined
+  const requestedTopicId = stateTopicId ?? queryTopicId
+  const [serverTopics, setServerTopics] = useState<PeerTopic[]>([])
+  const [serverSession, setServerSession] = useState<PeerSessionDto | null>(null)
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [isServerBusy, setIsServerBusy] = useState(false)
+  const [selectedTopicId, setSelectedTopicId] = useState<string>(
+    requestedTopicId && peerTopics.some((topic) => topic.id === requestedTopicId)
+      ? requestedTopicId
+      : peerTopics[0]?.id ?? ''
+  )
   const [selectedDuration, setSelectedDuration] = useState<number>(10)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [isMatching, setIsMatching] = useState<boolean>(false)
   const [matchedPartner, setMatchedPartner] = useState<PeerPartner | null>(null)
+  const [inviteCopied, setInviteCopied] = useState(false)
 
-  const selectedTopic = peerTopics.find((t) => t.id === selectedTopicId) ?? peerTopics[0]
+  const serverReady = canUseServer && serverTopics.length > 0
+  const availableTopics = serverTopics.length > 0 ? serverTopics : peerTopics
+  const selectedTopic = availableTopics.find((t) => t.id === selectedTopicId) ?? availableTopics[0]
 
-  const filteredTopics = peerTopics.filter((t) => {
+  useEffect(() => {
+    if (!canUseServer) {
+      setServerTopics([])
+      setServerSession(null)
+      setServerError(null)
+      return
+    }
+    const controller = new AbortController()
+    void Promise.all([
+      peerService.getScenarios({}, controller.signal),
+      peerService.getActiveSession(controller.signal),
+    ])
+      .then(([scenarios, active]) => {
+        setServerTopics(scenarios.map(toPeerTopic))
+        setServerSession(active)
+        setServerError(null)
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) setServerError(describeApiError(cause).message)
+      })
+    return () => controller.abort()
+  }, [canUseServer])
+
+  useEffect(() => {
+    if (availableTopics.length > 0 && !availableTopics.some((topic) => topic.id === selectedTopicId)) {
+      setSelectedTopicId(availableTopics[0].id)
+    }
+  }, [availableTopics, selectedTopicId])
+
+  const filteredTopics = availableTopics.filter((t) => {
     if (selectedCategory === 'all') return true
     return t.category === selectedCategory
   })
 
-  const handleStartMatching = () => {
+  const ensureServerSession = async (): Promise<PeerSessionDto | null> => {
+    if (!serverReady || !selectedTopic) return null
+    if (serverSession && !['ENDED', 'CANCELLED', 'EXPIRED'].includes(serverSession.status)) return serverSession
+
+    setIsServerBusy(true)
+    try {
+      const created = await peerService.createSession(selectedTopic.id)
+      setServerSession(created)
+      setServerError(null)
+      return created
+    } catch (cause) {
+      setServerError(describeApiError(cause).message)
+      return null
+    } finally {
+      setIsServerBusy(false)
+    }
+  }
+
+  const handleStartMatching = async () => {
+    if (canUseServer) {
+      if (!serverReady) {
+        setServerError('Đang tải danh sách chủ đề server…')
+        return
+      }
+      await ensureServerSession()
+      setMatchedPartner(null)
+      return
+    }
+
+    if (activePeerSession) {
+      navigate(ROUTES.PEER_ROOM)
+      return
+    }
+
     setIsMatching(true)
     setMatchedPartner(null)
 
-    // Simulate smart matching radar after 2.2 seconds
+    // Simulate smart matching radar after 2.2 seconds for the local preview only.
     setTimeout(() => {
       const partner = peerPartners[Math.floor(Math.random() * peerPartners.length)]
       setMatchedPartner(partner)
@@ -54,9 +133,58 @@ export function PeerPractice() {
     }, 2200)
   }
 
-  const handleEnterRoom = () => {
+  const handleCopyInvite = async () => {
+    if (canUseServer) {
+      if (!serverReady) {
+        setServerError('Đang tải danh sách chủ đề server…')
+        return
+      }
+      const session = await ensureServerSession()
+      if (!session) return
+      setIsServerBusy(true)
+      try {
+        const invite = await peerService.createInvite(session.id)
+        const inviteUrl = window.location.origin + ROUTES.PEER_JOIN + '#token=' + encodeURIComponent(invite.token)
+        await navigator.clipboard.writeText(inviteUrl)
+        setInviteCopied(true)
+        setServerError(null)
+        window.setTimeout(() => setInviteCopied(false), 2400)
+      } catch (cause) {
+        setInviteCopied(false)
+        setServerError(describeApiError(cause).message)
+      } finally {
+        setIsServerBusy(false)
+      }
+      return
+    }
+
+    if (!activePeerSession && selectedTopic) {
+      startPeerSession(selectedTopic.id, peerPartners[0]?.id)
+    }
+
+    const inviteTopicId = activePeerSession?.topicId ?? selectedTopicId
+    const inviteUrl = window.location.origin + ROUTES.PEER_JOIN + '#token=demo-' + encodeURIComponent(inviteTopicId) + '&topic=' + encodeURIComponent(inviteTopicId)
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setInviteCopied(true)
+      window.setTimeout(() => setInviteCopied(false), 2400)
+    } catch {
+      setInviteCopied(false)
+    }
+  }
+
+  const handleEnterRoom = async () => {
+    if (canUseServer) {
+      if (!serverReady) {
+        setServerError('Đang tải danh sách chủ đề server…')
+        return
+      }
+      const session = await ensureServerSession()
+      if (session) navigate(`${ROUTES.PEER_ROOM}/${session.id}`)
+      return
+    }
     if (!matchedPartner || !selectedTopic) return
-    const session = startPeerSession(selectedTopic.id, matchedPartner.id)
+    startPeerSession(selectedTopic.id, matchedPartner.id)
     navigate(ROUTES.PEER_ROOM)
   }
 
@@ -78,11 +206,19 @@ export function PeerPractice() {
         </div>
 
         {/* Quick Stats Pill */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-study-surface border border-study-border text-xs font-medium text-study-text shadow-xs">
-            <Radio size={14} className="text-study-success animate-pulse" />
-            <span>Đang có <strong>18</strong> bạn học online</span>
+            <Clock size={14} className="text-study-primary" />
+            <span>Phiên 1–1 · 5–15 phút</span>
           </div>
+          <button
+            type="button"
+            onClick={handleCopyInvite}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-study-accent/30 bg-study-accent-soft text-study-accent text-xs font-semibold transition-colors hover:bg-study-accent hover:text-white cursor-pointer"
+          >
+            {inviteCopied ? <Check size={14} /> : <Copy size={14} />}
+            {inviteCopied ? 'Đã sao chép lời mời' : 'Mời bạn học'}
+          </button>
         </div>
       </div>
 
@@ -96,7 +232,53 @@ export function PeerPractice() {
           </p>
         </div>
       </div>
-
+      {activePeerSession && (
+        <div role="status" className="flex flex-col gap-3 rounded-2xl border border-study-primary/25 bg-study-primary-soft/40 p-4 text-xs sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <strong className="font-semibold text-study-text">Bạn đang có một phiên chưa kết thúc.</strong>
+            <p className="mt-1 text-study-text-muted">{activePeerSession.topicTitle} · quay lại lobby hoặc phòng luyện để tiếp tục.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.PEER_ROOM)}
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-study-primary px-3.5 py-2 font-semibold text-white transition-colors hover:bg-study-primary-hover"
+          >
+            Quay lại phiên
+          </button>
+        </div>
+      )}
+      {serverError && (
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800">
+          {serverError}
+        </div>
+      )}
+      {serverSession && !['ENDED', 'CANCELLED', 'EXPIRED'].includes(serverSession.status) && (
+        <div role="status" className="flex flex-col gap-3 rounded-2xl border border-study-primary/25 bg-study-primary-soft/40 p-4 text-xs sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <strong className="font-semibold text-study-text">Phòng server đã sẵn sàng để mời bạn học.</strong>
+            <p className="mt-1 text-study-text-muted">
+              Trạng thái: {serverSession.status} · hết hạn {new Date(serverSession.expiresAt ?? serverSession.serverNow).toLocaleString('vi-VN')}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleCopyInvite}
+              disabled={isServerBusy}
+              className="inline-flex items-center justify-center rounded-xl border border-study-primary/30 bg-study-surface px-3.5 py-2 font-semibold text-study-primary transition-colors hover:bg-study-surface-hover disabled:cursor-wait disabled:opacity-50"
+            >
+              {isServerBusy ? 'Đang xử lý…' : inviteCopied ? 'Đã sao chép' : 'Sao chép lời mời'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`${ROUTES.PEER_ROOM}/${serverSession.id}`)}
+              className="inline-flex items-center justify-center rounded-xl bg-study-primary px-3.5 py-2 font-semibold text-white transition-colors hover:bg-study-primary-hover"
+            >
+              Mở lobby
+            </button>
+          </div>
+        </div>
+      )}
       {/* Topic Filter Tabs */}
       <div className="flex flex-wrap gap-2 pt-1">
         {[
@@ -233,10 +415,10 @@ export function PeerPractice() {
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-study-text">
-                  Sẵn sàng kết nối với bạn học?
+                  Muốn thử nhịp một phiên peer?
                 </h4>
                 <p className="text-xs text-study-text-muted mt-0.5">
-                  Hệ thống sẽ tự động ghép bạn với học viên có trình độ tương đương đang chờ.
+                  Bạn có thể mời người thật bằng nút Mời bạn học, hoặc mở phòng mẫu để xem flow.
                 </p>
               </div>
             </div>
@@ -247,7 +429,7 @@ export function PeerPractice() {
               className="w-full sm:w-auto px-6 py-3 rounded-xl bg-study-accent text-white font-semibold text-xs hover:bg-study-accent-hover transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2 shrink-0"
             >
               <Search size={16} />
-              <span>Bắt đầu tìm bạn học ngay</span>
+              <span>{serverReady ? 'Tạo phòng server' : 'Xem phòng mẫu theo chủ đề'}</span>
             </button>
           </div>
         )}
@@ -263,10 +445,10 @@ export function PeerPractice() {
             </div>
             <div>
               <h4 className="text-base font-display font-semibold text-study-text">
-                Đang tìm bạn học phù hợp...
+                Đang chuẩn bị phòng mẫu...
               </h4>
               <p className="text-xs text-study-text-muted mt-1 max-w-sm">
-                Đang đối chiếu trình độ và mục tiêu chủ đề “{selectedTopic?.title}”.
+                Đang dựng agenda cho chủ đề “{selectedTopic?.title}”.
               </p>
             </div>
           </div>
@@ -287,7 +469,7 @@ export function PeerPractice() {
                     {matchedPartner.name}
                   </h4>
                   <span className="px-2 py-0.5 rounded-full bg-study-success/15 text-study-success text-[10px] font-bold">
-                    ĐÃ KẾT NỐI
+                    PHÒNG MẪU
                   </span>
                 </div>
                 <p className="text-xs text-study-text-muted">
@@ -312,7 +494,7 @@ export function PeerPractice() {
                 onClick={handleStartMatching}
                 className="px-4 py-2.5 rounded-xl border border-study-border bg-study-surface text-xs font-semibold text-study-text-muted hover:text-study-text transition-colors cursor-pointer"
               >
-                Đổi bạn học khác
+                Đổi bạn mẫu
               </button>
               <button
                 type="button"
@@ -320,7 +502,7 @@ export function PeerPractice() {
                 className="px-6 py-2.5 rounded-xl bg-study-accent text-white text-xs font-semibold hover:bg-study-accent-hover transition-all shadow-xs cursor-pointer flex items-center justify-center gap-2"
               >
                 <Play size={15} fill="currentColor" />
-                <span>Vào phòng đàm thoại ngay</span>
+                <span>Mở phòng mẫu</span>
               </button>
             </div>
           </div>

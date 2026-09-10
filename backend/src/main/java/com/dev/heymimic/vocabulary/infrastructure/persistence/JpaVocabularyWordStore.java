@@ -28,8 +28,11 @@ public class JpaVocabularyWordStore implements VocabularyWordStore {
   @Override
   public VocabularyWordPage findPage(
       UUID userId, VocabularyStatus status, Instant dueBefore, int page, int size) {
-    var pageable =
-        PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
+    Sort sort =
+        dueBefore == null
+            ? Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
+            : Sort.by(Sort.Order.asc("nextReviewAt"), Sort.Order.asc("id"));
+    var pageable = PageRequest.of(page, size, sort);
     var result = repository.findOwnedPage(userId, status, dueBefore, pageable);
     return new VocabularyWordPage(
         result.getContent().stream().map(this::record).toList(),

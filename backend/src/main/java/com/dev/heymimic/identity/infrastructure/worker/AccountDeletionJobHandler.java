@@ -5,6 +5,7 @@ import com.dev.heymimic.identity.application.IdentityAccountDeletionService;
 import com.dev.heymimic.identity.application.port.DeletionCheckpointStore;
 import com.dev.heymimic.platform.application.publicapi.AccountDataCleaner;
 import com.dev.heymimic.platform.application.publicapi.ClaimedJob;
+import com.dev.heymimic.platform.application.publicapi.JobExecutionFence;
 import com.dev.heymimic.platform.application.publicapi.JobHandler;
 import java.time.Clock;
 import java.util.Collection;
@@ -21,12 +22,14 @@ public class AccountDeletionJobHandler implements JobHandler {
   private final DeletionCheckpointStore checkpoints;
   private final IdentityAccountDeletionFinalizer finalizer;
   private final Clock clock;
+  private final JobExecutionFence fence;
 
   public AccountDeletionJobHandler(
       Collection<AccountDataCleaner> cleaners,
       DeletionCheckpointStore checkpoints,
       IdentityAccountDeletionFinalizer finalizer,
-      Clock clock) {
+      Clock clock,
+      JobExecutionFence fence) {
     this.cleaners =
         cleaners.stream().sorted(Comparator.comparingInt(AccountDataCleaner::order)).toList();
     var names = new HashSet<String>();
@@ -39,6 +42,7 @@ public class AccountDeletionJobHandler implements JobHandler {
     this.checkpoints = checkpoints;
     this.finalizer = finalizer;
     this.clock = clock;
+    this.fence = fence;
   }
 
   @Override
@@ -60,14 +64,22 @@ public class AccountDeletionJobHandler implements JobHandler {
 
     for (AccountDataCleaner cleaner : cleaners) {
       if (!checkpoints.isCompleted(userId, cleaner.cleanerName())) {
-        cleaner.clean(userId, job.id());
-        checkpoints.completeStep(userId, cleaner.cleanerName(), clock.instant());
+        fence.run(
+            job,
+            () -> {
+              cleaner.clean(userId, job.id());
+              checkpoints.completeStep(userId, cleaner.cleanerName(), clock.instant());
+            });
       }
     }
     if (!checkpoints.isCompleted(userId, IDENTITY_STEP)) {
-      finalizer.finalizeDeletion(userId);
-      checkpoints.completeStep(userId, IDENTITY_STEP, clock.instant());
+      fence.run(
+          job,
+          () -> {
+            finalizer.finalizeDeletion(userId);
+            checkpoints.completeStep(userId, IDENTITY_STEP, clock.instant());
+          });
     }
-    checkpoints.completeDeletion(userId, clock.instant());
+    fence.run(job, () -> checkpoints.completeDeletion(userId, clock.instant()));
   }
 }

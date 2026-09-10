@@ -276,6 +276,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/peer/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["start_4"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/peer/sessions/{sessionId}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startRoom"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/peer/sessions/{sessionId}/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/peer/sessions/{sessionId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/peer/invites/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/verify-email": {
         parameters: {
             query?: never;
@@ -466,6 +546,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["updateMistake"];
+        trace?: never;
+    };
+    "/api/v1/peer/sessions/{sessionId}/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["ready"];
         trace?: never;
     };
     "/api/v1/me/profile": {
@@ -692,7 +788,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me": {
+    "/api/v1/peer/sessions/{sessionId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -700,6 +796,54 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/peer/sessions/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["active_3"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/peer/scenarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["scenarios"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_5"];
         put?: never;
         post?: never;
         delete: operations["delete"];
@@ -715,7 +859,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_5"];
+        get: operations["get_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -731,7 +875,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_6"];
+        get: operations["get_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1085,6 +1229,87 @@ export interface components {
         CompleteAttemptUploadRequest: {
             checksumSha256: string;
         };
+        StartPeerSessionRequest: {
+            /** Format: uuid */
+            scenarioVersionId: string;
+        };
+        PeerParticipantView: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            slot?: number;
+            role?: string;
+            displayName?: string;
+            status?: string;
+            ready?: boolean;
+            mediaConnected?: boolean;
+            /** Format: date-time */
+            joinedAt?: string;
+        };
+        PeerPhaseView: {
+            phase?: string;
+            title?: string;
+            /** Format: int32 */
+            durationSeconds?: number;
+            promptEn?: string;
+            promptVi?: string;
+            hints?: string[];
+        };
+        PeerScenarioView: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            version?: number;
+            title?: string;
+            category?: string;
+            categoryLabel?: string;
+            level?: string;
+            commonObjective?: string;
+            description?: string;
+            /** Format: int32 */
+            durationMinutes?: number;
+            phases?: components["schemas"]["PeerPhaseView"][];
+            recommendedVocab?: string[];
+        };
+        PeerSessionView: {
+            /** Format: uuid */
+            id?: string;
+            status?: string;
+            scenario?: components["schemas"]["PeerScenarioView"];
+            participants?: components["schemas"]["PeerParticipantView"][];
+            currentPhase?: string;
+            /** Format: date-time */
+            serverNow?: string;
+            /** Format: date-time */
+            phaseDeadline?: string;
+            /** Format: int64 */
+            version?: number;
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: uuid */
+            viewerParticipantId?: string;
+            viewerRole?: string;
+            endReason?: string;
+        };
+        StartPeerRoomRequest: {
+            /** Format: int64 */
+            expectedVersion?: number;
+        };
+        PeerInviteView: {
+            /** Format: uuid */
+            sessionId?: string;
+            token?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+        };
+        EndPeerSessionRequest: {
+            /** Format: int64 */
+            expectedVersion?: number;
+            endReason?: string;
+        };
+        AcceptPeerInviteRequest: {
+            token: string;
+        };
         VerifyEmailRequest: {
             token: string;
         };
@@ -1171,6 +1396,11 @@ export interface components {
             firstSeenAt?: string;
             /** Format: date-time */
             lastSeenAt?: string;
+        };
+        SetPeerReadyRequest: {
+            ready?: boolean;
+            /** Format: int64 */
+            expectedVersion?: number;
         };
         UpdateProfileRequest: {
             name?: string;
@@ -1339,9 +1569,9 @@ export interface components {
             reason?: string;
         };
         CsrfToken: {
+            parameterName?: string;
             headerName?: string;
             token?: string;
-            parameterName?: string;
         };
         CsrfResponse: {
             headerName?: string;
@@ -1854,6 +2084,138 @@ export interface operations {
             };
         };
     };
+    start_4: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartPeerSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeerSessionView"];
+                };
+            };
+        };
+    };
+    startRoom: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartPeerRoomRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeerSessionView"];
+                };
+            };
+        };
+    };
+    createInvite: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeerInviteView"];
+                };
+            };
+        };
+    };
+    end: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndPeerSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeerSessionView"];
+                };
+            };
+        };
+    };
+    acceptInvite: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptPeerInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeerSessionView"];
+                };
+            };
+        };
+    };
     verifyEmail: {
         parameters: {
             query?: never;
@@ -2161,6 +2523,34 @@ export interface operations {
             };
         };
     };
+    ready: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPeerReadyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeerSessionView"];
+                };
+            };
+        };
+    };
     update_1: {
         parameters: {
             query?: never;
@@ -2423,7 +2813,7 @@ export interface operations {
     mistakes: {
         parameters: {
             query?: {
-                status?: string;
+                status?: components["schemas"]["MistakeStatus"];
                 category?: string;
                 page?: number;
                 size?: number;
@@ -2472,6 +2862,71 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeerSessionView"];
+                };
+            };
+        };
+    };
+    active_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeerSessionView"];
+                };
+            };
+        };
+    };
+    scenarios: {
+        parameters: {
+            query?: {
+                category?: string;
+                level?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeerScenarioView"][];
+                };
+            };
+        };
+    };
+    get_5: {
+        parameters: {
+            query?: never;
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -2510,7 +2965,7 @@ export interface operations {
             };
         };
     };
-    get_5: {
+    get_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -2530,7 +2985,7 @@ export interface operations {
             };
         };
     };
-    get_6: {
+    get_7: {
         parameters: {
             query?: never;
             header?: never;

@@ -1,5 +1,8 @@
 package com.dev.heymimic.progress.application;
 
+import com.dev.heymimic.platform.application.publicapi.OutboxPublisher;
+import com.dev.heymimic.platform.application.publicapi.PublishEvent;
+import com.dev.heymimic.platform.application.publicapi.UserContextChanges;
 import com.dev.heymimic.progress.application.port.MistakeOccurrenceRecord;
 import com.dev.heymimic.progress.application.port.MistakePatternRecord;
 import com.dev.heymimic.progress.application.port.MistakePatternStore;
@@ -12,6 +15,7 @@ import com.dev.heymimic.progress.application.publicapi.MistakeQueries;
 import com.dev.heymimic.progress.domain.MistakeStatus;
 import com.dev.heymimic.shared.error.ApiException;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -24,10 +28,27 @@ public class MistakeQueryService implements MistakeQueries {
   private static final Set<String> CATEGORIES = Set.of("GRAMMAR", "VOCABULARY", "EXPRESSION");
   private final MistakePatternStore mistakes;
   private final Clock clock;
+  private final OutboxPublisher outbox;
+  private final UserContextChanges contextChanges;
 
   public MistakeQueryService(MistakePatternStore mistakes, Clock clock) {
+    this(
+        mistakes,
+        clock,
+        event -> event.aggregateId(),
+        (userId, contextKey, causeEventId, requiredConsumers) -> 0L);
+  }
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public MistakeQueryService(
+      MistakePatternStore mistakes,
+      Clock clock,
+      OutboxPublisher outbox,
+      UserContextChanges contextChanges) {
     this.mistakes = mistakes;
     this.clock = clock;
+    this.outbox = outbox;
+    this.contextChanges = contextChanges;
   }
 
   @Override
@@ -73,7 +94,32 @@ public class MistakeQueryService implements MistakeQueries {
           "MISTAKE_VERSION_CONFLICT",
           "Mistake pattern was updated by another request");
     }
-    return view(owned(userId, patternId));
+    MistakePatternRecord updated = owned(userId, patternId);
+    recordStatusChange(userId, updated, target);
+    return view(updated);
+  }
+
+  private void recordStatusChange(UUID userId, MistakePatternRecord pattern, MistakeStatus status) {
+    Instant occurredAt = clock.instant();
+    UUID eventId =
+        outbox.publish(
+            new PublishEvent(
+                userId,
+                "MistakeStatusChanged",
+                1,
+                pattern.id(),
+                occurredAt,
+                "{\"userId\":\""
+                    + userId
+                    + "\",\"patternId\":\""
+                    + pattern.id()
+                    + "\",\"patternVersion\":"
+                    + pattern.version()
+                    + ",\"status\":\""
+                    + status.name()
+                    + "\"}"));
+    contextChanges.record(
+        userId, UserContextChanges.LEARNING_CONTEXT, eventId, java.util.List.of());
   }
 
   private MistakePatternRecord owned(UUID userId, UUID patternId) {

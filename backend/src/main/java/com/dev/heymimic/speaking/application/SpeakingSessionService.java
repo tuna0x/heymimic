@@ -6,6 +6,7 @@ import com.dev.heymimic.platform.application.publicapi.IdempotencyExecutor;
 import com.dev.heymimic.platform.application.publicapi.IdempotentResponse;
 import com.dev.heymimic.platform.application.publicapi.OutboxPublisher;
 import com.dev.heymimic.platform.application.publicapi.PublishEvent;
+import com.dev.heymimic.platform.application.publicapi.UserContextChanges;
 import com.dev.heymimic.shared.error.ApiException;
 import com.dev.heymimic.speaking.application.port.SpeakingAttemptRecord;
 import com.dev.heymimic.speaking.application.port.SpeakingAttemptStore;
@@ -58,6 +59,7 @@ public class SpeakingSessionService implements SpeakingPractice {
   private final OutboxPublisher outbox;
   private final ObjectMapper objectMapper;
   private final Clock clock;
+  private final UserContextChanges contextChanges;
 
   public SpeakingSessionService(
       SpeakingTopicStore topics,
@@ -69,6 +71,31 @@ public class SpeakingSessionService implements SpeakingPractice {
       OutboxPublisher outbox,
       ObjectMapper objectMapper,
       Clock clock) {
+    this(
+        topics,
+        sessions,
+        attempts,
+        evaluations,
+        profiles,
+        idempotency,
+        outbox,
+        objectMapper,
+        clock,
+        (userId, key, eventId, consumers) -> 0L);
+  }
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public SpeakingSessionService(
+      SpeakingTopicStore topics,
+      SpeakingSessionStore sessions,
+      SpeakingAttemptStore attempts,
+      SpeakingEvaluationStore evaluations,
+      LearnerProfiles profiles,
+      IdempotencyExecutor idempotency,
+      OutboxPublisher outbox,
+      ObjectMapper objectMapper,
+      Clock clock,
+      UserContextChanges contextChanges) {
     this.topics = topics;
     this.sessions = sessions;
     this.attempts = attempts;
@@ -78,6 +105,7 @@ public class SpeakingSessionService implements SpeakingPractice {
     this.outbox = outbox;
     this.objectMapper = objectMapper;
     this.clock = clock;
+    this.contextChanges = contextChanges;
   }
 
   @Override
@@ -231,22 +259,28 @@ public class SpeakingSessionService implements SpeakingPractice {
     var now = clock.instant();
     if (!sessions.complete(session, selectedAttemptId, now)) throw sessionConflict();
     payload = completionPayload(session, selectedAttemptId, sessionAttempts, byAttempt, now);
-    outbox.publish(
-        new PublishEvent(
-            userId,
-            "SpeakingSessionCompleted",
-            1,
-            sessionId,
-            now,
-            write(
-                new SpeakingCompletedEventPayload(
-                    sessionId,
-                    userId,
-                    now,
-                    session.timezoneSnapshot(),
-                    payload.acceptedDurationSeconds(),
-                    successfulAttemptIds(sessionAttempts, byAttempt),
-                    "speaking-duration-v1"))));
+    UUID eventId =
+        outbox.publish(
+            new PublishEvent(
+                userId,
+                "SpeakingSessionCompleted",
+                1,
+                sessionId,
+                now,
+                write(
+                    new SpeakingCompletedEventPayload(
+                        sessionId,
+                        userId,
+                        now,
+                        session.timezoneSnapshot(),
+                        payload.acceptedDurationSeconds(),
+                        successfulAttemptIds(sessionAttempts, byAttempt),
+                        "speaking-duration-v1"))));
+    contextChanges.record(
+        userId,
+        UserContextChanges.LEARNING_CONTEXT,
+        eventId,
+        java.util.List.of("progress-speaking-session-ledger-v1"));
     return IdempotentResponse.fresh(HttpStatus.OK.value(), write(payload));
   }
 

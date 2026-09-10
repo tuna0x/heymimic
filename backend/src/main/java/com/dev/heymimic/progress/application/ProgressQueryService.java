@@ -101,7 +101,11 @@ public class ProgressQueryService implements ProgressQueries {
       return new ProgressRecommendationView(
           "activeMistake", mistake.title(), mistake.id(), activeMistakes.totalItems());
     }
-    var topics = speaking.topics(null, level);
+    var topics =
+        speaking.topics(
+            null,
+            com.dev.heymimic.speaking.application.publicapi.PracticeLevelResolver.topicLevel(
+                level));
     if (!topics.isEmpty()) {
       var topic = topics.get(0);
       return new ProgressRecommendationView(

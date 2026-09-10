@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @EnableScheduling
-@EnableConfigurationProperties(JobWorkerConfiguration.Properties.class)
+@EnableConfigurationProperties({JobWorkerConfiguration.Properties.class, TransportProperties.class})
 public class JobWorkerConfiguration {
   @ConfigurationProperties("heymimic.jobs")
   public record Properties(
@@ -17,5 +17,12 @@ public class JobWorkerConfiguration {
       int batchSize,
       Duration lease,
       Duration pollInterval,
-      int maxAttempts) {}
+      int maxAttempts) {
+    public Properties {
+      if (workerId == null || workerId.isBlank())
+        workerId = "worker-" + java.util.UUID.randomUUID();
+      if (batchSize < 1 || maxAttempts < 1 || lease == null || lease.isNegative() || lease.isZero())
+        throw new IllegalArgumentException("Invalid worker limits");
+    }
+  }
 }

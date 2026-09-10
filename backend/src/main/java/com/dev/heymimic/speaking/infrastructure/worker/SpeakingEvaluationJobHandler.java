@@ -1,6 +1,7 @@
 package com.dev.heymimic.speaking.infrastructure.worker;
 
 import com.dev.heymimic.platform.application.publicapi.ClaimedJob;
+import com.dev.heymimic.platform.application.publicapi.JobExecutionFence;
 import com.dev.heymimic.platform.application.publicapi.JobHandler;
 import com.dev.heymimic.platform.application.publicapi.NonRetryableJobException;
 import com.dev.heymimic.platform.application.publicapi.ProviderBudgetManager;
@@ -36,21 +37,7 @@ public class SpeakingEvaluationJobHandler implements JobHandler {
   private final SpeakingFeedbackPort feedback;
   private final ProviderUsageRecorder usageRecorder;
   private final ProviderBudgetManager budgetManager;
-
-  public SpeakingEvaluationJobHandler(
-      SpeakingEvaluationWorkflow workflow,
-      SpeakingTranscriptionPort transcription,
-      SpeakingFeedbackPort feedback) {
-    this(workflow, transcription, feedback, receipt -> {}, ProviderBudgetManager.noop());
-  }
-
-  public SpeakingEvaluationJobHandler(
-      SpeakingEvaluationWorkflow workflow,
-      SpeakingTranscriptionPort transcription,
-      SpeakingFeedbackPort feedback,
-      ProviderUsageRecorder usageRecorder) {
-    this(workflow, transcription, feedback, usageRecorder, ProviderBudgetManager.noop());
-  }
+  private final JobExecutionFence fence;
 
   @Autowired
   public SpeakingEvaluationJobHandler(
@@ -58,12 +45,14 @@ public class SpeakingEvaluationJobHandler implements JobHandler {
       SpeakingTranscriptionPort transcription,
       SpeakingFeedbackPort feedback,
       ProviderUsageRecorder usageRecorder,
-      ProviderBudgetManager budgetManager) {
+      ProviderBudgetManager budgetManager,
+      JobExecutionFence fence) {
     this.workflow = workflow;
     this.transcription = transcription;
     this.feedback = feedback;
     this.usageRecorder = usageRecorder;
     this.budgetManager = budgetManager;
+    this.fence = fence;
   }
 
   @Override
@@ -73,23 +62,23 @@ public class SpeakingEvaluationJobHandler implements JobHandler {
 
   @Override
   public void handle(ClaimedJob job) {
-    var prepared = workflow.prepare(job.resourceId(), job.ownerUserId());
+    var prepared = fence.execute(job, () -> workflow.prepare(job.resourceId(), job.ownerUserId()));
     if (prepared.isEmpty()) return;
     var evaluation = prepared.orElseThrow();
     if (evaluation.stage() == SpeakingEvaluationStage.TRANSCRIBING) {
       var transcript = transcribe(evaluation, job);
-      var checkpoint = saveTranscript(evaluation, transcript);
+      var checkpoint = saveTranscript(job, evaluation, transcript);
       if (checkpoint.isEmpty()) return;
       evaluation = checkpoint.orElseThrow();
     }
     if (evaluation.stage() == SpeakingEvaluationStage.FEEDBACK) {
-      complete(evaluation, evaluateFeedback(evaluation, job));
+      complete(job, evaluation, evaluateFeedback(evaluation, job));
     }
   }
 
   private SpeakingTranscriptionResult transcribe(
       PreparedSpeakingEvaluation evaluation, ClaimedJob job) {
-    reserveBudget(job, evaluation, "STT");
+    fence.run(job, () -> reserveBudget(job, evaluation, "STT"));
     try {
       var result =
           transcription.transcribe(
@@ -110,9 +99,11 @@ public class SpeakingEvaluationJobHandler implements JobHandler {
   }
 
   private Optional<PreparedSpeakingEvaluation> saveTranscript(
-      PreparedSpeakingEvaluation evaluation, SpeakingTranscriptionResult transcript) {
+      ClaimedJob job,
+      PreparedSpeakingEvaluation evaluation,
+      SpeakingTranscriptionResult transcript) {
     try {
-      return workflow.saveTranscript(evaluation, transcript);
+      return fence.execute(job, () -> workflow.saveTranscript(evaluation, transcript));
     } catch (IllegalArgumentException exception) {
       throw new NonRetryableJobException(
           "STT_INVALID_RESPONSE", "Transcription provider returned an invalid response", exception);
@@ -121,7 +112,7 @@ public class SpeakingEvaluationJobHandler implements JobHandler {
 
   private SpeakingFeedbackResult evaluateFeedback(
       PreparedSpeakingEvaluation evaluation, ClaimedJob job) {
-    reserveBudget(job, evaluation, "FEEDBACK");
+    fence.run(job, () -> reserveBudget(job, evaluation, "FEEDBACK"));
     try {
       var result =
           feedback.evaluate(
@@ -140,9 +131,10 @@ public class SpeakingEvaluationJobHandler implements JobHandler {
     }
   }
 
-  private void complete(PreparedSpeakingEvaluation evaluation, SpeakingFeedbackResult result) {
+  private void complete(
+      ClaimedJob job, PreparedSpeakingEvaluation evaluation, SpeakingFeedbackResult result) {
     try {
-      workflow.complete(evaluation, result);
+      fence.run(job, () -> workflow.complete(evaluation, result));
     } catch (IllegalArgumentException exception) {
       throw new NonRetryableJobException(
           "FEEDBACK_INVALID_RESPONSE", "Feedback provider returned an invalid response", exception);
@@ -221,7 +213,12 @@ public class SpeakingEvaluationJobHandler implements JobHandler {
   }
 
   @Override
+  public boolean isCompleted(ClaimedJob job) {
+    return fence.execute(job, () -> workflow.isCompleted(job.resourceId(), job.ownerUserId()));
+  }
+
+  @Override
   public void onFinalFailure(ClaimedJob job, String errorCode) {
-    workflow.failFinal(job.resourceId(), job.ownerUserId(), errorCode);
+    fence.run(job, () -> workflow.failFinal(job.resourceId(), job.ownerUserId(), errorCode));
   }
 }

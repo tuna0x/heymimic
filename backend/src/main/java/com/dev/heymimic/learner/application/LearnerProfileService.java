@@ -7,6 +7,9 @@ import com.dev.heymimic.learner.application.publicapi.LearnerProfileCreator;
 import com.dev.heymimic.learner.application.publicapi.LearnerProfileView;
 import com.dev.heymimic.learner.application.publicapi.LearnerProfiles;
 import com.dev.heymimic.learner.application.publicapi.UpdateLearnerProfile;
+import com.dev.heymimic.platform.application.publicapi.OutboxPublisher;
+import com.dev.heymimic.platform.application.publicapi.PublishEvent;
+import com.dev.heymimic.platform.application.publicapi.UserContextChanges;
 import com.dev.heymimic.shared.error.ApiException;
 import java.time.Clock;
 import java.time.DateTimeException;
@@ -22,10 +25,23 @@ public class LearnerProfileService implements LearnerProfileCreator, LearnerProf
   private static final Set<Integer> DAILY_GOALS = Set.of(5, 10, 15);
   private final LearnerProfileStore store;
   private final Clock clock;
+  private final OutboxPublisher outbox;
+  private final UserContextChanges contextChanges;
 
   public LearnerProfileService(LearnerProfileStore store, Clock clock) {
+    this(store, clock, event -> event.aggregateId(), (userId, key, eventId, consumers) -> 0L);
+  }
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public LearnerProfileService(
+      LearnerProfileStore store,
+      Clock clock,
+      OutboxPublisher outbox,
+      UserContextChanges contextChanges) {
     this.store = store;
     this.clock = clock;
+    this.outbox = outbox;
+    this.contextChanges = contextChanges;
   }
 
   @Override
@@ -55,6 +71,7 @@ public class LearnerProfileService implements LearnerProfileCreator, LearnerProf
             command.expectedVersion(),
             clock.instant());
     if (!updated) throw versionConflict();
+    recordProfileChange(userId, load(userId).version(), clock.instant());
     return view(load(userId));
   }
 
@@ -80,7 +97,22 @@ public class LearnerProfileService implements LearnerProfileCreator, LearnerProf
         clock.instant())) {
       throw versionConflict();
     }
+    recordProfileChange(userId, load(userId).version(), clock.instant());
     return view(load(userId));
+  }
+
+  private void recordProfileChange(UUID userId, long profileVersion, java.time.Instant occurredAt) {
+    UUID eventId =
+        outbox.publish(
+            new PublishEvent(
+                userId,
+                "LearnerProfileChanged",
+                1,
+                userId,
+                occurredAt,
+                "{\"userId\":\"" + userId + "\",\"profileVersion\":" + profileVersion + "}"));
+    contextChanges.record(
+        userId, UserContextChanges.LEARNING_CONTEXT, eventId, java.util.List.of());
   }
 
   private com.dev.heymimic.learner.application.port.LearnerProfileRecord load(UUID userId) {

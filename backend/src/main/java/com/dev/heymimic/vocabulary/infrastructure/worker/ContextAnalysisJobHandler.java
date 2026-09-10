@@ -1,6 +1,7 @@
 package com.dev.heymimic.vocabulary.infrastructure.worker;
 
 import com.dev.heymimic.platform.application.publicapi.ClaimedJob;
+import com.dev.heymimic.platform.application.publicapi.JobExecutionFence;
 import com.dev.heymimic.platform.application.publicapi.JobHandler;
 import com.dev.heymimic.platform.application.publicapi.NonRetryableJobException;
 import com.dev.heymimic.platform.application.publicapi.ProviderBudgetManager;
@@ -27,29 +28,20 @@ public class ContextAnalysisJobHandler implements JobHandler {
   private final VocabularyExtractionPort extraction;
   private final ProviderUsageRecorder usageRecorder;
   private final ProviderBudgetManager budgetManager;
-
-  public ContextAnalysisJobHandler(
-      ContextAnalysisWorkflow workflow, VocabularyExtractionPort extraction) {
-    this(workflow, extraction, receipt -> {}, ProviderBudgetManager.noop());
-  }
-
-  public ContextAnalysisJobHandler(
-      ContextAnalysisWorkflow workflow,
-      VocabularyExtractionPort extraction,
-      ProviderUsageRecorder usageRecorder) {
-    this(workflow, extraction, usageRecorder, ProviderBudgetManager.noop());
-  }
+  private final JobExecutionFence fence;
 
   @Autowired
   public ContextAnalysisJobHandler(
       ContextAnalysisWorkflow workflow,
       VocabularyExtractionPort extraction,
       ProviderUsageRecorder usageRecorder,
-      ProviderBudgetManager budgetManager) {
+      ProviderBudgetManager budgetManager,
+      JobExecutionFence fence) {
     this.workflow = workflow;
     this.extraction = extraction;
     this.usageRecorder = usageRecorder;
     this.budgetManager = budgetManager;
+    this.fence = fence;
   }
 
   @Override
@@ -59,21 +51,24 @@ public class ContextAnalysisJobHandler implements JobHandler {
 
   @Override
   public void handle(ClaimedJob job) {
-    workflow
-        .prepare(job.resourceId(), job.ownerUserId())
+    fence
+        .execute(job, () -> workflow.prepare(job.resourceId(), job.ownerUserId()))
         .ifPresent(analysis -> extractAndComplete(job, analysis));
   }
 
   private void extractAndComplete(ClaimedJob job, PreparedContextAnalysis analysis) {
     try {
-      budgetManager.reserve(
-          new ProviderBudgetReservationCommand(
-              job.id(),
-              analysis.id(),
-              analysis.userId(),
-              OPERATION,
-              STAGE,
-              Math.max(1, job.attempts())));
+      fence.run(
+          job,
+          () ->
+              budgetManager.reserve(
+                  new ProviderBudgetReservationCommand(
+                      job.id(),
+                      analysis.id(),
+                      analysis.userId(),
+                      OPERATION,
+                      STAGE,
+                      Math.max(1, job.attempts()))));
     } catch (ApiException exception) {
       if (exception.code().startsWith("PROVIDER_BUDGET_")) {
         throw new NonRetryableJobException(exception.code(), exception.getMessage(), exception);
@@ -109,7 +104,7 @@ public class ContextAnalysisJobHandler implements JobHandler {
             usage.requestId() == null ? "unknown" : "anthropic",
             null,
             usage));
-    workflow.complete(analysis, result);
+    fence.run(job, () -> workflow.complete(analysis, result));
   }
 
   private void recordSafely(ProviderUsageReceipt receipt) {
@@ -125,7 +120,12 @@ public class ContextAnalysisJobHandler implements JobHandler {
   }
 
   @Override
+  public boolean isCompleted(ClaimedJob job) {
+    return fence.execute(job, () -> workflow.isCompleted(job.resourceId(), job.ownerUserId()));
+  }
+
+  @Override
   public void onFinalFailure(ClaimedJob job, String errorCode) {
-    workflow.fail(job.resourceId(), job.ownerUserId(), errorCode);
+    fence.run(job, () -> workflow.fail(job.resourceId(), job.ownerUserId(), errorCode));
   }
 }

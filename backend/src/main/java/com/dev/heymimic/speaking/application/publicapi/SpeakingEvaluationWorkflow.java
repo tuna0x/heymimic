@@ -8,6 +8,8 @@ import java.util.UUID;
 public interface SpeakingEvaluationWorkflow {
   String JOB_TYPE = "SPEAKING_EVALUATION";
 
+  boolean isCompleted(UUID evaluationId, UUID userId);
+
   Optional<PreparedSpeakingEvaluation> prepare(UUID evaluationId, UUID userId);
 
   Optional<PreparedSpeakingEvaluation> saveTranscript(

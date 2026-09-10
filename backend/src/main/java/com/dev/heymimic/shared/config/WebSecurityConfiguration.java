@@ -15,7 +15,23 @@ public class WebSecurityConfiguration {
     csrfRepository.setHeaderName("X-CSRF-TOKEN");
     csrfRepository.setCookieName("mimic_csrf");
     csrfRepository.setCookiePath("/api/v1");
-    return http.csrf(csrf -> csrf.csrfTokenRepository(csrfRepository))
+    return http.csrf(
+            csrf ->
+                csrf.csrfTokenRepository(csrfRepository)
+                    .withObjectPostProcessor(
+                        new org.springframework.security.config.ObjectPostProcessor<
+                            org.springframework.security.web.csrf.CsrfFilter>() {
+                          @Override
+                          public <O extends org.springframework.security.web.csrf.CsrfFilter>
+                              O postProcess(O filter) {
+                            // Browser mutations require CSRF even with a bearer token;
+                            // resource-server defaults ignore it.
+                            filter.setRequireCsrfProtectionMatcher(
+                                org.springframework.security.web.csrf.CsrfFilter
+                                    .DEFAULT_CSRF_MATCHER);
+                            return filter;
+                          }
+                        }))
         .sessionManagement(
             sessions -> sessions.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(

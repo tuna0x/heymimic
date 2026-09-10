@@ -32,7 +32,11 @@ class AccountDeletionJobHandlerTest {
     when(checkpoints.isCompleted(userId, "identity")).thenReturn(false);
     var handler =
         new AccountDeletionJobHandler(
-            List.of(learner, platform), checkpoints, finalizer, Clock.fixed(now, ZoneOffset.UTC));
+            List.of(learner, platform),
+            checkpoints,
+            finalizer,
+            Clock.fixed(now, ZoneOffset.UTC),
+            com.dev.heymimic.support.TestJobFences.direct());
     var job =
         new ClaimedJob(
             jobId, userId, "DELETE_ACCOUNT", userId, 1, "{}", null, 2, 4, now.plusSeconds(120));

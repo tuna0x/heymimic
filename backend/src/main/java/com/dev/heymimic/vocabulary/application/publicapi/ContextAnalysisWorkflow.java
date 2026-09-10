@@ -7,6 +7,8 @@ import java.util.UUID;
 public interface ContextAnalysisWorkflow {
   String JOB_TYPE = "VOCABULARY_CONTEXT_ANALYSIS";
 
+  boolean isCompleted(UUID analysisId, UUID userId);
+
   Optional<PreparedContextAnalysis> prepare(UUID analysisId, UUID userId);
 
   void complete(PreparedContextAnalysis analysis, VocabularyExtractionResult result);

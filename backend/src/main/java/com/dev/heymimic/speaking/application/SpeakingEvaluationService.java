@@ -10,6 +10,7 @@ import com.dev.heymimic.platform.application.publicapi.PaidWorkGuard;
 import com.dev.heymimic.platform.application.publicapi.PublishEvent;
 import com.dev.heymimic.platform.application.publicapi.QuotaManager;
 import com.dev.heymimic.platform.application.publicapi.ReserveQuota;
+import com.dev.heymimic.platform.application.publicapi.UserContextChanges;
 import com.dev.heymimic.shared.error.ApiException;
 import com.dev.heymimic.speaking.application.port.SpeakingAttemptRecord;
 import com.dev.heymimic.speaking.application.port.SpeakingAttemptStore;
@@ -58,6 +59,7 @@ public class SpeakingEvaluationService implements SpeakingEvaluations, SpeakingE
   private final OutboxPublisher outbox;
   private final ObjectMapper objectMapper;
   private final Clock clock;
+  private final UserContextChanges contextChanges;
 
   public SpeakingEvaluationService(
       SpeakingSessionStore sessions,
@@ -71,6 +73,35 @@ public class SpeakingEvaluationService implements SpeakingEvaluations, SpeakingE
       OutboxPublisher outbox,
       ObjectMapper objectMapper,
       Clock clock) {
+    this(
+        sessions,
+        attempts,
+        evaluations,
+        feedbackItems,
+        idempotency,
+        quotas,
+        jobs,
+        paidWorkGuard,
+        outbox,
+        objectMapper,
+        clock,
+        (userId, key, eventId, consumers) -> 0L);
+  }
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public SpeakingEvaluationService(
+      SpeakingSessionStore sessions,
+      SpeakingAttemptStore attempts,
+      SpeakingEvaluationStore evaluations,
+      SpeakingFeedbackStore feedbackItems,
+      IdempotencyExecutor idempotency,
+      QuotaManager quotas,
+      JobQueue jobs,
+      PaidWorkGuard paidWorkGuard,
+      OutboxPublisher outbox,
+      ObjectMapper objectMapper,
+      Clock clock,
+      UserContextChanges contextChanges) {
     this.sessions = sessions;
     this.attempts = attempts;
     this.evaluations = evaluations;
@@ -82,6 +113,7 @@ public class SpeakingEvaluationService implements SpeakingEvaluations, SpeakingE
     this.outbox = outbox;
     this.objectMapper = objectMapper;
     this.clock = clock;
+    this.contextChanges = contextChanges;
   }
 
   @Override
@@ -292,25 +324,40 @@ public class SpeakingEvaluationService implements SpeakingEvaluations, SpeakingE
       throw new IllegalStateException("Could not complete speaking attempt processing");
     }
     quotas.consume(evaluation.quotaReservationId(), evaluation.userId());
-    outbox.publish(
-        new PublishEvent(
-            evaluation.userId(),
-            "SpeakingEvaluationCompleted",
-            1,
-            evaluation.id(),
-            now,
-            write(
-                new SpeakingEvaluationCompletedPayload(
-                    evaluation.id(),
-                    evaluation.userId(),
-                    now,
-                    "speaking-feedback-v1",
-                    java.util.stream.IntStream.range(0, validated.items().size())
-                        .mapToObj(
-                            position ->
-                                eventItem(
-                                    evaluation.id(), position, validated.items().get(position)))
-                        .toList()))));
+    UUID eventId =
+        outbox.publish(
+            new PublishEvent(
+                evaluation.userId(),
+                "SpeakingEvaluationCompleted",
+                1,
+                evaluation.id(),
+                now,
+                write(
+                    new SpeakingEvaluationCompletedPayload(
+                        evaluation.id(),
+                        evaluation.userId(),
+                        now,
+                        "speaking-feedback-v1",
+                        java.util.stream.IntStream.range(0, validated.items().size())
+                            .mapToObj(
+                                position ->
+                                    eventItem(
+                                        evaluation.id(), position, validated.items().get(position)))
+                            .toList()))));
+    contextChanges.record(
+        evaluation.userId(),
+        UserContextChanges.LEARNING_CONTEXT,
+        eventId,
+        java.util.List.of("progress-mistake-projection-v1"));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public boolean isCompleted(UUID evaluationId, UUID userId) {
+    return evaluations
+        .findOwned(evaluationId, userId)
+        .filter(evaluation -> evaluation.status() == SpeakingEvaluationStatus.COMPLETED)
+        .isPresent();
   }
 
   @Override

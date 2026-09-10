@@ -121,11 +121,11 @@ public final class DeepgramTranscriptionAdapter implements SpeakingTranscription
     Map<?, ?> results = object(root.get("results"));
     List<?> channels = list(results.get("channels"));
     if (channels.isEmpty()) throw new IllegalArgumentException("No transcription channels");
-    Map<?, ?> channel = object(channels.getFirst());
+    Map<?, ?> channel = object(channels.get(0));
     List<?> alternatives = list(channel.get("alternatives"));
     if (alternatives.isEmpty()) throw new IllegalArgumentException("No transcription alternatives");
 
-    String transcript = required(object(alternatives.getFirst()).get("transcript"));
+    String transcript = required(object(alternatives.get(0)).get("transcript"));
     Map<?, ?> metadata = root.get("metadata") instanceof Map<?, ?> values ? values : Map.of();
     Double durationSeconds = decimal(metadata.get("duration"));
     Long audioMilliseconds =

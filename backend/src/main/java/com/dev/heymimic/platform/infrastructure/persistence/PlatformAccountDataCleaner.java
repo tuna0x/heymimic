@@ -40,6 +40,17 @@ public class PlatformAccountDataCleaner implements AccountDataCleaner {
       throw new IllegalStateException("Account still has running jobs");
     }
 
+    jdbc.update(
+        """
+        delete from platform_context_change_deliveries
+        where change_id in (
+          select id from platform_user_context_changes where user_id = ?
+        )
+        """,
+        userId);
+    jdbc.update("delete from platform_context_change_receipts where user_id = ?", userId);
+    jdbc.update("delete from platform_user_context_changes where user_id = ?", userId);
+    jdbc.update("delete from platform_user_context_versions where user_id = ?", userId);
     jdbc.update("delete from platform_outbox_events where owner_user_id = ?", userId);
     jdbc.update("delete from platform_idempotency_records where user_id = ?", userId);
     jdbc.update("delete from platform_quota_reservations where user_id = ?", userId);

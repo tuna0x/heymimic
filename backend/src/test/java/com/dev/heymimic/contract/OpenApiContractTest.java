@@ -17,6 +17,8 @@ import com.dev.heymimic.learner.api.CapabilityController;
 import com.dev.heymimic.learner.api.MeController;
 import com.dev.heymimic.learner.api.UsageController;
 import com.dev.heymimic.learner.application.publicapi.LearnerProfiles;
+import com.dev.heymimic.peer.api.PeerSessionController;
+import com.dev.heymimic.peer.application.PeerPractice;
 import com.dev.heymimic.platform.application.port.QuotaStore;
 import com.dev.heymimic.platform.infrastructure.config.QuotaConfiguration;
 import com.dev.heymimic.progress.api.ProgressController;
@@ -76,6 +78,7 @@ class OpenApiContractTest {
   @MockitoBean ReviewSessions reviewSessions;
   @MockitoBean VocabularyWords vocabularyWords;
   @MockitoBean QuotaStore quotaStore;
+  @MockitoBean PeerPractice peerPractice;
 
   @Test
   void exportsAllCoreModulePaths(@Autowired MockMvc mvc) throws Exception {
@@ -128,6 +131,7 @@ class OpenApiContractTest {
     UsageController.class,
     ProgressController.class,
     SpeakingSessionController.class,
+    PeerSessionController.class,
     StudySessionController.class,
     ContextAnalysisController.class,
     ReviewSessionController.class,

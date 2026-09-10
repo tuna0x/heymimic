@@ -5,9 +5,12 @@ import com.dev.heymimic.platform.application.publicapi.IdempotencyCommand;
 import com.dev.heymimic.platform.application.publicapi.IdempotencyExecutor;
 import com.dev.heymimic.platform.application.publicapi.IdempotentResponse;
 import com.dev.heymimic.platform.application.publicapi.JobQueue;
+import com.dev.heymimic.platform.application.publicapi.OutboxPublisher;
 import com.dev.heymimic.platform.application.publicapi.PaidWorkGuard;
+import com.dev.heymimic.platform.application.publicapi.PublishEvent;
 import com.dev.heymimic.platform.application.publicapi.QuotaManager;
 import com.dev.heymimic.platform.application.publicapi.ReserveQuota;
+import com.dev.heymimic.platform.application.publicapi.UserContextChanges;
 import com.dev.heymimic.shared.error.ApiException;
 import com.dev.heymimic.vocabulary.application.port.ContextAnalysisRecord;
 import com.dev.heymimic.vocabulary.application.port.ContextAnalysisStore;
@@ -55,6 +58,8 @@ public class VocabularyContextAnalysisService implements ContextAnalyses, Contex
   private final PaidWorkGuard paidWorkGuard;
   private final ObjectMapper objectMapper;
   private final Clock clock;
+  private final OutboxPublisher outbox;
+  private final UserContextChanges contextChanges;
 
   public VocabularyContextAnalysisService(
       ContextAnalysisStore analyses,
@@ -65,6 +70,31 @@ public class VocabularyContextAnalysisService implements ContextAnalyses, Contex
       PaidWorkGuard paidWorkGuard,
       ObjectMapper objectMapper,
       Clock clock) {
+    this(
+        analyses,
+        words,
+        idempotency,
+        quotas,
+        jobs,
+        paidWorkGuard,
+        objectMapper,
+        clock,
+        event -> event.aggregateId(),
+        (userId, contextKey, causeEventId, requiredConsumers) -> 0L);
+  }
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public VocabularyContextAnalysisService(
+      ContextAnalysisStore analyses,
+      VocabularyWordStore words,
+      IdempotencyExecutor idempotency,
+      QuotaManager quotas,
+      JobQueue jobs,
+      PaidWorkGuard paidWorkGuard,
+      ObjectMapper objectMapper,
+      Clock clock,
+      OutboxPublisher outbox,
+      UserContextChanges contextChanges) {
     this.analyses = analyses;
     this.words = words;
     this.idempotency = idempotency;
@@ -73,6 +103,8 @@ public class VocabularyContextAnalysisService implements ContextAnalyses, Contex
     this.paidWorkGuard = paidWorkGuard;
     this.objectMapper = objectMapper;
     this.clock = clock;
+    this.outbox = outbox;
+    this.contextChanges = contextChanges;
   }
 
   @Override
@@ -157,31 +189,58 @@ public class VocabularyContextAnalysisService implements ContextAnalyses, Contex
     }
 
     Instant now = clock.instant();
-    return selected.stream()
-        .map(
-            suggestion -> {
-              String normalizedWord = VocabularyWordIdentity.normalize(suggestion.word());
-              String senseKey =
-                  VocabularyWordIdentity.senseKey(
-                      analysis.targetLanguage(), suggestion.meaning(), suggestion.partOfSpeech());
-              return words.createOrFind(
-                  new NewVocabularyWord(
-                      UUID.randomUUID(),
-                      userId,
-                      analysis.targetLanguage(),
-                      normalizedWord,
-                      senseKey,
-                      suggestion.word(),
-                      suggestion.meaning(),
-                      suggestion.pronunciation(),
-                      suggestion.partOfSpeech(),
-                      suggestion.example(),
-                      suggestion.translation(),
-                      suggestion.sourceSentence(),
-                      now));
-            })
-        .map(this::wordView)
-        .toList();
+    List<VocabularyWordRecord> saved =
+        selected.stream()
+            .map(
+                suggestion -> {
+                  String normalizedWord = VocabularyWordIdentity.normalize(suggestion.word());
+                  String senseKey =
+                      VocabularyWordIdentity.senseKey(
+                          analysis.targetLanguage(),
+                          suggestion.meaning(),
+                          suggestion.partOfSpeech());
+                  return words.createOrFind(
+                      new NewVocabularyWord(
+                          UUID.randomUUID(),
+                          userId,
+                          analysis.targetLanguage(),
+                          normalizedWord,
+                          senseKey,
+                          suggestion.word(),
+                          suggestion.meaning(),
+                          suggestion.pronunciation(),
+                          suggestion.partOfSpeech(),
+                          suggestion.example(),
+                          suggestion.translation(),
+                          suggestion.sourceSentence(),
+                          now));
+                })
+            .toList();
+    saved.forEach(word -> recordWordChange(userId, word, "CONTEXT_ANALYSIS_SAVED", now));
+    return saved.stream().map(this::wordView).toList();
+  }
+
+  private void recordWordChange(
+      UUID userId, VocabularyWordRecord word, String changeKind, Instant occurredAt) {
+    UUID eventId =
+        outbox.publish(
+            new PublishEvent(
+                userId,
+                "VocabularyWordChanged",
+                1,
+                word.id(),
+                occurredAt,
+                "{\"wordId\":\""
+                    + word.id()
+                    + "\",\"userId\":\""
+                    + userId
+                    + "\",\"wordVersion\":"
+                    + word.version()
+                    + ",\"changeKind\":\""
+                    + changeKind
+                    + "\"}"));
+    contextChanges.record(
+        userId, UserContextChanges.LEARNING_CONTEXT, eventId, java.util.List.of());
   }
 
   @Override
@@ -215,6 +274,15 @@ public class VocabularyContextAnalysisService implements ContextAnalyses, Contex
     if (analyses.complete(analysis.id(), analysis.userId(), resultJson, clock.instant())) {
       quotas.consume(analysis.quotaReservationId(), analysis.userId());
     }
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public boolean isCompleted(UUID analysisId, UUID userId) {
+    return analyses
+        .findOwned(analysisId, userId)
+        .filter(analysis -> analysis.resultJson() != null)
+        .isPresent();
   }
 
   @Override

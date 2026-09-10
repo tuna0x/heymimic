@@ -1,0 +1,8 @@
+# Opt in with SPRING_PROFILES_ACTIVE=dev,mq after starting Compose dependencies.
+heymimic:
+  messaging.transport: rabbitmq
+  cache.enabled: true
+  study.planner.enabled: true
+management:
+  health.rabbit.enabled: true
+  health.redis.enabled: true

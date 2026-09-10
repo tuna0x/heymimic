@@ -3,6 +3,10 @@ package com.dev.heymimic.platform.application.publicapi;
 public interface JobHandler {
   String jobType();
 
+  default boolean isCompleted(ClaimedJob job) {
+    return false;
+  }
+
   default boolean allowsInactiveOwner() {
     return false;
   }

@@ -12,6 +12,9 @@ cd backend
 
 The API uses `/api/v1`; health is available at `/actuator/health`.
 
+RabbitMQ + Redis are available through `SPRING_PROFILES_ACTIVE=dev,mq` after
+`docker compose up -d postgres rabbitmq redis`. See [startup, worker roles, recovery and rollback](../docs/runbooks/message-queue-and-redis.md) and [ADR0031](../docs/adr/0031-rabbitmq-dispatch-and-redis-cache.md).
+
 ## Operational metrics
 
 Micrometer records bounded outcome counters and execution timers for the platform workers:
@@ -315,3 +318,13 @@ storage/evaluation. Orphan cleanup, browser recovery and real provider smoke tes
 docs/adr/0028-versioned-s3-deepgram-audio.md.
 
 Provider calls are recorded in platform_provider_usage by operation, stage and worker execution attempt. Successful calls keep provider request-id and usage metadata when available; timeouts or uncertain outcomes are recorded as UNKNOWN for later reconciliation. When enabled, workers reserve a configured global rate-card budget before provider calls and reconcile known usage afterward; UNKNOWN keeps its reservation. See docs/adr/0029-provider-usage-receipts.md and docs/adr/0030-provider-budget-reservation-reconciliation.md.
+
+## One-to-one peer speaking
+
+The peer speaking slice is available under '/api/v1/peer'. GET /scenarios returns the published
+catalog; authenticated clients can create an idempotent session, issue a single-use invite, accept
+an invite, toggle readiness with an optimistic expectedVersion, start the room after both learners
+are ready, and end it. PostgreSQL owns the session/participant/invite state; stale reservations are
+expired and released before they can block a new session. Migrations V24 and V25 seed the initial
+catalog. The browser UI keeps the preflight microphone check and sample room explicit until a media
+provider (WebRTC/LiveKit) and realtime presence channel are enabled.

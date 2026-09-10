@@ -154,4 +154,24 @@ class ProgressQueryServiceTest {
     when(speaking.topics(null, "B1")).thenReturn(List.of());
     when(speaking.topics(null, null)).thenReturn(List.of());
   }
+
+  @Test
+  void onboardingLevelUsesSupportedTopicBand() {
+    emptyRecommendations();
+    when(profiles.get(userId))
+        .thenReturn(
+            new LearnerProfileView(
+                UUID.randomUUID(),
+                "Tuna",
+                "en",
+                "conversation",
+                "intermediate",
+                15,
+                "UTC",
+                true,
+                1));
+    when(activities.findAll(userId)).thenReturn(List.of());
+    service.overview(userId);
+    org.mockito.Mockito.verify(speaking).topics(null, "B1-B2");
+  }
 }

@@ -1,4 +1,4 @@
-import { Bot, History, Mic, Sparkles, Volume2, X } from 'lucide-react'
+import { ArrowLeft, Bot, History, Mic, Sparkles, Volume2, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AmbientSoundSelector } from '../components/speaking/AmbientSoundSelector'
@@ -273,6 +273,13 @@ export function Speaking() {
     <div className="space-y-8 max-w-5xl mx-auto pb-12 text-left">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-study-border">
         <div>
+          <Link
+            to="/speaking"
+            className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-study-text-muted transition-colors hover:text-study-text"
+          >
+            <ArrowLeft size={14} />
+            Về phòng luyện nói
+          </Link>
           <SectionLabel>Phòng thu phản xạ nói</SectionLabel>
           <h1 className="text-3xl sm:text-4xl font-display font-bold text-study-text tracking-tight mt-1">
             Luyện nói không áp lực<span className="text-study-primary">.</span>

@@ -24,6 +24,7 @@ import {
   Volume2,
 } from 'lucide-react'
 import { SectionLabel } from '../components/shared/UI'
+import { PeerLobby } from '../components/peer/PeerLobby'
 import { AmbientSoundSelector } from '../components/speaking/AmbientSoundSelector'
 import { useAmbientSound } from '../hook/useAmbientSound'
 import { usePageMeta } from '../hook/usePageMeta'
@@ -57,6 +58,13 @@ export function PeerRoom() {
   const [isVideoOn, setIsVideoOn] = useState<boolean>(true)
   const [floatingReaction, setFloatingReaction] = useState<string | null>(null)
   const [showReviewModal, setShowReviewModal] = useState<boolean>(false)
+  const [roomReady, setRoomReady] = useState(false)
+
+  useEffect(() => {
+    if (!activePeerSession) {
+      navigate(ROUTES.PEER_PRACTICE)
+    }
+  }, [activePeerSession, navigate])
 
   // Review modal state
   const [selectedCompliments, setSelectedCompliments] = useState<string[]>([])
@@ -65,6 +73,7 @@ export function PeerRoom() {
 
   // Countdown timer for each round
   useEffect(() => {
+    if (!roomReady) return
     setTimeLeft(currentRound.durationSeconds)
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
@@ -76,7 +85,7 @@ export function PeerRoom() {
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [currentRoundIdx, currentRound.durationSeconds])
+  }, [currentRoundIdx, currentRound.durationSeconds, roomReady])
 
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -118,6 +127,18 @@ export function PeerRoom() {
       completePeerSession(activePeerSession.id, feedback)
     }
     navigate(ROUTES.DASHBOARD)
+  }
+
+  if (!activePeerSession) {
+    return (
+      <div role="status" className="mx-auto max-w-5xl py-16 text-center text-sm text-study-text-muted">
+        Đang quay về danh sách phiên luyện nói…
+      </div>
+    )
+  }
+
+  if (!roomReady) {
+    return <PeerLobby topic={topic} partner={partner} onStart={() => setRoomReady(true)} />
   }
 
   return (
@@ -180,7 +201,7 @@ export function PeerRoom() {
           <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-              <span className="text-xs font-semibold drop-shadow">Bạn (Alex Trần)</span>
+              <span className="text-xs font-semibold drop-shadow">Bạn</span>
             </div>
             <span className="px-2 py-0.5 rounded bg-black/40 backdrop-blur-xs text-[10px] font-mono text-neutral-300">
               {isMicOn ? 'MIC ĐANG BẬT' : 'MIC ĐANG TẮT'}
@@ -224,7 +245,7 @@ export function PeerRoom() {
                 {isVideoOn ? <Video size={15} /> : <VideoOff size={15} />}
               </button>
             </div>
-            <span className="text-[10px] text-neutral-400">Chất lượng HD • 32ms</span>
+            <span className="text-[10px] text-neutral-400">Mic cục bộ · phòng mẫu</span>
           </div>
         </div>
 
@@ -240,12 +261,12 @@ export function PeerRoom() {
           {/* Header Info */}
           <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
               <span className="text-xs font-semibold drop-shadow">{partner.name}</span>
               <span className="text-[10px] text-neutral-400">• {partner.city}</span>
             </div>
             <span className="px-2 py-0.5 rounded bg-study-accent/80 backdrop-blur-xs text-[10px] font-semibold text-white">
-              ĐANG NÓI
+              PHÒNG MẪU
             </span>
           </div>
 

@@ -1,5 +1,8 @@
 package com.dev.heymimic.vocabulary.application;
 
+import com.dev.heymimic.platform.application.publicapi.OutboxPublisher;
+import com.dev.heymimic.platform.application.publicapi.PublishEvent;
+import com.dev.heymimic.platform.application.publicapi.UserContextChanges;
 import com.dev.heymimic.shared.error.ApiException;
 import com.dev.heymimic.vocabulary.application.port.VocabularyWordRecord;
 import com.dev.heymimic.vocabulary.application.port.VocabularyWordStore;
@@ -20,10 +23,27 @@ import org.springframework.transaction.annotation.Transactional;
 public class VocabularyWordService implements VocabularyWords {
   private final VocabularyWordStore words;
   private final Clock clock;
+  private final OutboxPublisher outbox;
+  private final UserContextChanges contextChanges;
 
   public VocabularyWordService(VocabularyWordStore words, Clock clock) {
+    this(
+        words,
+        clock,
+        event -> event.aggregateId(),
+        (userId, contextKey, causeEventId, requiredConsumers) -> 0L);
+  }
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public VocabularyWordService(
+      VocabularyWordStore words,
+      Clock clock,
+      OutboxPublisher outbox,
+      UserContextChanges contextChanges) {
     this.words = words;
     this.clock = clock;
+    this.outbox = outbox;
+    this.contextChanges = contextChanges;
   }
 
   @Override
@@ -89,7 +109,32 @@ public class VocabularyWordService implements VocabularyWords {
           "VOCABULARY_VERSION_CONFLICT",
           "Vocabulary word was updated by another request");
     }
-    return view(loadOwned(wordId, userId));
+    VocabularyWordRecord updatedWord = loadOwned(wordId, userId);
+    recordWordChange(userId, updatedWord, "CONTENT_UPDATED", clock.instant());
+    return view(updatedWord);
+  }
+
+  private void recordWordChange(
+      UUID userId, VocabularyWordRecord word, String changeKind, Instant occurredAt) {
+    UUID eventId =
+        outbox.publish(
+            new PublishEvent(
+                userId,
+                "VocabularyWordChanged",
+                1,
+                word.id(),
+                occurredAt,
+                "{\"wordId\":\""
+                    + word.id()
+                    + "\",\"userId\":\""
+                    + userId
+                    + "\",\"wordVersion\":"
+                    + word.version()
+                    + ",\"changeKind\":\""
+                    + changeKind
+                    + "\"}"));
+    contextChanges.record(
+        userId, UserContextChanges.LEARNING_CONTEXT, eventId, java.util.List.of());
   }
 
   private VocabularyWordRecord loadOwned(UUID wordId, UUID userId) {

@@ -142,7 +142,7 @@ public class JdbcJobStore implements JobStore {
         == 1;
   }
 
-  private ClaimedJob mapClaimedJob(ResultSet result, int rowNumber) throws SQLException {
+  ClaimedJob mapClaimedJob(ResultSet result, int rowNumber) throws SQLException {
     Timestamp leaseUntil = result.getTimestamp("lease_until");
     return new ClaimedJob(
         result.getObject("id", UUID.class),
@@ -154,6 +154,7 @@ public class JdbcJobStore implements JobStore {
         result.getString("checkpoint"),
         result.getInt("attempts"),
         result.getLong("lease_generation"),
-        leaseUntil.toInstant());
+        leaseUntil.toInstant(),
+        result.getString("lease_owner"));
   }
 }

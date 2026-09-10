@@ -2,6 +2,7 @@ package com.dev.heymimic.platform.infrastructure.worker;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -25,7 +26,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 
-class PlatformJobWorkerTest {
+class PlatformJobExecutorTest {
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final PlatformWorkerMetrics metrics = new PlatformWorkerMetrics(meterRegistry);
 
@@ -51,13 +52,15 @@ class PlatformJobWorkerTest {
         new JobWorkerConfiguration.Properties(
             true, "worker-a", 10, Duration.ofMinutes(2), Duration.ofSeconds(2), 5);
     var worker =
-        new PlatformJobWorker(
+        new PlatformJobExecutor(
             queue,
             List.of(handler),
             guardProvider,
             properties,
             Clock.fixed(now, ZoneOffset.UTC),
-            metrics);
+            metrics,
+            com.dev.heymimic.support.TestJobFences.direct(),
+            com.dev.heymimic.support.TestJobFences.transactions());
     UUID jobId = UUID.randomUUID();
     var job =
         new ClaimedJob(
@@ -107,13 +110,15 @@ class PlatformJobWorkerTest {
         new JobWorkerConfiguration.Properties(
             true, "worker-a", 10, Duration.ofMinutes(2), Duration.ofSeconds(2), 5);
     var worker =
-        new PlatformJobWorker(
+        new PlatformJobExecutor(
             queue,
             List.of(handler),
             beanFactory.getBeanProvider(AccountWorkGuard.class),
             properties,
             Clock.fixed(now, ZoneOffset.UTC),
-            metrics);
+            metrics,
+            com.dev.heymimic.support.TestJobFences.direct(),
+            com.dev.heymimic.support.TestJobFences.transactions());
     UUID jobId = UUID.randomUUID();
     var job =
         new ClaimedJob(
@@ -150,13 +155,15 @@ class PlatformJobWorkerTest {
         new JobWorkerConfiguration.Properties(
             true, "worker-a", 10, Duration.ofMinutes(2), Duration.ofSeconds(2), 5);
     var worker =
-        new PlatformJobWorker(
+        new PlatformJobExecutor(
             queue,
             List.of(handler),
             beanFactory.getBeanProvider(AccountWorkGuard.class),
             properties,
             Clock.fixed(now, ZoneOffset.UTC),
-            metrics);
+            metrics,
+            com.dev.heymimic.support.TestJobFences.direct(),
+            com.dev.heymimic.support.TestJobFences.transactions());
     UUID jobId = UUID.randomUUID();
     var job =
         new ClaimedJob(
@@ -194,13 +201,15 @@ class PlatformJobWorkerTest {
         new JobWorkerConfiguration.Properties(
             true, "worker-a", 10, Duration.ofMinutes(2), Duration.ofSeconds(2), 5);
     var worker =
-        new PlatformJobWorker(
+        new PlatformJobExecutor(
             queue,
             List.of(handler),
             beanFactory.getBeanProvider(AccountWorkGuard.class),
             properties,
             Clock.fixed(now, ZoneOffset.UTC),
-            metrics);
+            metrics,
+            com.dev.heymimic.support.TestJobFences.direct(),
+            com.dev.heymimic.support.TestJobFences.transactions());
     UUID jobId = UUID.randomUUID();
     var job =
         new ClaimedJob(
@@ -222,5 +231,47 @@ class PlatformJobWorkerTest {
     ordered.verify(handler).onFinalFailure(job, "REMOTE_TIMEOUT");
     ordered.verify(queue).failFinal(jobId, "worker-a", 3, "REMOTE_TIMEOUT");
     verify(queue, never()).retry(any(), any(), anyLong(), any(), any());
+  }
+
+  @Test
+  void reclaimedExhaustedJobFinalizesWithoutCallingProvider() throws Exception {
+    JobQueue queue = mock(JobQueue.class);
+    JobHandler handler = mock(JobHandler.class);
+    when(handler.jobType()).thenReturn("TEST");
+    when(queue.failFinal(any(), anyString(), anyLong(), anyString())).thenReturn(true);
+    var worker =
+        new PlatformJobExecutor(
+            queue,
+            List.of(handler),
+            new StaticListableBeanFactory().getBeanProvider(AccountWorkGuard.class),
+            new JobWorkerConfiguration.Properties(
+                true, "worker", 1, Duration.ofMinutes(2), Duration.ofSeconds(2), 5),
+            Clock.systemUTC(),
+            metrics,
+            com.dev.heymimic.support.TestJobFences.direct(),
+            com.dev.heymimic.support.TestJobFences.transactions());
+    var job =
+        new ClaimedJob(
+            UUID.randomUUID(),
+            null,
+            "TEST",
+            UUID.randomUUID(),
+            1,
+            "{}",
+            null,
+            6,
+            6,
+            Instant.now().plusSeconds(120));
+    worker.execute(job);
+    verify(handler, never()).handle(any());
+    verify(handler).onFinalFailure(job, "RETRY_BUDGET_EXHAUSTED");
+    org.mockito.Mockito.doThrow(new IllegalStateException("finalization unavailable"))
+        .when(handler)
+        .onFinalFailure(job, "RETRY_BUDGET_EXHAUSTED");
+    org.mockito.Mockito.clearInvocations(queue);
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> worker.execute(job))
+        .isInstanceOf(IllegalStateException.class);
+    verify(queue, never()).failFinal(any(), anyString(), anyLong(), anyString());
+    worker.shutdownHeartbeatExecutor();
   }
 }

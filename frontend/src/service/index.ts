@@ -1,5 +1,6 @@
 export * from './api'
 export * from './speakingService'
+export * from './peerService'
 export * from './vocabService'
 export * from './progressService'
 export * from './reviewService'

@@ -6,6 +6,7 @@ import com.dev.heymimic.platform.application.publicapi.IdempotencyExecutor;
 import com.dev.heymimic.platform.application.publicapi.IdempotentResponse;
 import com.dev.heymimic.platform.application.publicapi.OutboxPublisher;
 import com.dev.heymimic.platform.application.publicapi.PublishEvent;
+import com.dev.heymimic.platform.application.publicapi.UserContextChanges;
 import com.dev.heymimic.shared.error.ApiException;
 import com.dev.heymimic.vocabulary.application.port.ReviewEventRecord;
 import com.dev.heymimic.vocabulary.application.port.ReviewItemRecord;
@@ -53,6 +54,7 @@ public class VocabularyReviewSessionService implements ReviewSessions {
   private final OutboxPublisher outbox;
   private final ObjectMapper objectMapper;
   private final Clock clock;
+  private final UserContextChanges contextChanges;
 
   public VocabularyReviewSessionService(
       ReviewSessionStore sessions,
@@ -62,6 +64,27 @@ public class VocabularyReviewSessionService implements ReviewSessions {
       OutboxPublisher outbox,
       ObjectMapper objectMapper,
       Clock clock) {
+    this(
+        sessions,
+        words,
+        profiles,
+        idempotency,
+        outbox,
+        objectMapper,
+        clock,
+        (userId, key, eventId, consumers) -> 0L);
+  }
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public VocabularyReviewSessionService(
+      ReviewSessionStore sessions,
+      VocabularyWordStore words,
+      LearnerProfiles profiles,
+      IdempotencyExecutor idempotency,
+      OutboxPublisher outbox,
+      ObjectMapper objectMapper,
+      Clock clock,
+      UserContextChanges contextChanges) {
     this.sessions = sessions;
     this.words = words;
     this.profiles = profiles;
@@ -69,6 +92,7 @@ public class VocabularyReviewSessionService implements ReviewSessions {
     this.outbox = outbox;
     this.objectMapper = objectMapper;
     this.clock = clock;
+    this.contextChanges = contextChanges;
   }
 
   @Override
@@ -253,6 +277,7 @@ public class VocabularyReviewSessionService implements ReviewSessions {
       throw reviewConflict();
     }
     ReviewSessionView updated = get(userId, sessionId);
+    recordRatingChange(userId, sessionId, eventId, wordId, rating, now);
     return IdempotentResponse.fresh(
         HttpStatus.OK.value(), write(new RatingPayload(eventId, updated)));
   }
@@ -299,7 +324,54 @@ public class VocabularyReviewSessionService implements ReviewSessions {
       throw undoConflict();
     }
     if (!sessions.undoRating(session, item, event, now)) throw undoConflict();
+    UUID undoEventId =
+        outbox.publish(
+            new PublishEvent(
+                userId,
+                "VocabularyReviewRatingUndone",
+                1,
+                sessionId,
+                now,
+                "{\"userId\":\""
+                    + userId
+                    + "\",\"sessionId\":\""
+                    + sessionId
+                    + "\",\"originalReviewEventId\":\""
+                    + eventId
+                    + "\"}"));
+    contextChanges.record(
+        userId, UserContextChanges.LEARNING_CONTEXT, undoEventId, java.util.List.of());
     return IdempotentResponse.fresh(HttpStatus.NO_CONTENT.value(), "{}");
+  }
+
+  private void recordRatingChange(
+      UUID userId,
+      UUID sessionId,
+      UUID eventId,
+      UUID wordId,
+      ReviewRating rating,
+      Instant occurredAt) {
+    UUID changeEventId =
+        outbox.publish(
+            new PublishEvent(
+                userId,
+                "VocabularyReviewRatingRecorded",
+                1,
+                sessionId,
+                occurredAt,
+                "{\"userId\":\""
+                    + userId
+                    + "\",\"sessionId\":\""
+                    + sessionId
+                    + "\",\"reviewEventId\":\""
+                    + eventId
+                    + "\",\"wordId\":\""
+                    + wordId
+                    + "\",\"rating\":\""
+                    + rating.name()
+                    + "\"}"));
+    contextChanges.record(
+        userId, UserContextChanges.LEARNING_CONTEXT, changeEventId, java.util.List.of());
   }
 
   @Override
@@ -354,21 +426,27 @@ public class VocabularyReviewSessionService implements ReviewSessions {
             summary.needsReviewWords(),
             summary.acceptedDurationSeconds(),
             now);
-    outbox.publish(
-        new PublishEvent(
-            userId,
-            "VocabularyReviewCompleted",
-            1,
-            sessionId,
-            now,
-            write(
-                new ReviewCompletedEventPayload(
-                    sessionId,
-                    userId,
-                    now,
-                    session.timezone(),
-                    summary.acceptedDurationSeconds(),
-                    session.schedulerVersion()))));
+    UUID eventId =
+        outbox.publish(
+            new PublishEvent(
+                userId,
+                "VocabularyReviewCompleted",
+                1,
+                sessionId,
+                now,
+                write(
+                    new ReviewCompletedEventPayload(
+                        sessionId,
+                        userId,
+                        now,
+                        session.timezone(),
+                        summary.acceptedDurationSeconds(),
+                        session.schedulerVersion()))));
+    contextChanges.record(
+        userId,
+        UserContextChanges.LEARNING_CONTEXT,
+        eventId,
+        java.util.List.of("progress-activity-ledger-v1"));
     return IdempotentResponse.fresh(HttpStatus.OK.value(), write(payload));
   }
 

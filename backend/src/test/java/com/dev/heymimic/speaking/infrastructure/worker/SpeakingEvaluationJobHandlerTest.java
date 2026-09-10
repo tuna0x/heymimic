@@ -38,7 +38,12 @@ class SpeakingEvaluationJobHandlerTest {
   private final ProviderBudgetManager budgetManager = mock(ProviderBudgetManager.class);
   private final SpeakingEvaluationJobHandler handler =
       new SpeakingEvaluationJobHandler(
-          workflow, transcription, feedback, usageRecorder, budgetManager);
+          workflow,
+          transcription,
+          feedback,
+          usageRecorder,
+          budgetManager,
+          com.dev.heymimic.support.TestJobFences.direct());
 
   @Test
   void checkpointsTranscriptBeforeCallingFeedback() {

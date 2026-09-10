@@ -111,7 +111,8 @@ public class JdbcOutboxStore implements OutboxStore {
           and lease_generation = ? and lease_until >= ?
         """;
     Timestamp next = nextAttemptAt == null ? null : Timestamp.from(nextAttemptAt);
-    return jdbc.update(
+    int updated =
+        jdbc.update(
             sql,
             status.name(),
             errorCode,
@@ -120,11 +121,38 @@ public class JdbcOutboxStore implements OutboxStore {
             deliveryId,
             workerId,
             generation,
-            Timestamp.from(now))
-        == 1;
+            Timestamp.from(now));
+    if (updated == 1) {
+      advanceContextCheckpoints(deliveryId);
+    }
+    return updated == 1;
   }
 
-  private PublishedEvent mapPublishedEvent(ResultSet result, int rowNumber) throws SQLException {
+  private void advanceContextCheckpoints(UUID deliveryId) {
+    jdbc.update(
+        """
+        update platform_user_context_versions version
+        set ready_checkpoint_revision = coalesce((
+          select min(change.revision) - 1 from platform_user_context_changes change
+          where change.user_id = version.user_id and change.context_key = version.context_key
+            and change.revision <= version.revision
+            and exists (
+              select 1 from platform_context_change_deliveries dependency
+              join platform_event_deliveries delivery on delivery.id = dependency.delivery_id
+              where dependency.change_id = change.id and delivery.status <> 'SUCCEEDED'
+            )
+        ), version.revision)
+        where exists (
+          select 1 from platform_user_context_changes change
+          join platform_context_change_deliveries dependency on dependency.change_id = change.id
+          where dependency.delivery_id = ?
+            and change.user_id = version.user_id and change.context_key = version.context_key
+        )
+        """,
+        deliveryId);
+  }
+
+  PublishedEvent mapPublishedEvent(ResultSet result, int rowNumber) throws SQLException {
     return new PublishedEvent(
         result.getObject("delivery_id", UUID.class),
         result.getString("consumer_name"),

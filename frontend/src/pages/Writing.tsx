@@ -70,7 +70,7 @@ export function Writing() {
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-study-primary mb-1">
             <PenTool size={14} />
-            <span>WORKPLACE WRITING & REFLEX</span>
+            <span>Không gian luyện viết</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-study-text">
             Viết công sở & Dịch phản xạ câu
@@ -122,7 +122,8 @@ export function Writing() {
             <select
               value={selectedTemplateId}
               onChange={(e) => setSelectedTemplateId(e.target.value)}
-              className="px-3 py-1.5 rounded-xl bg-study-surface-muted border border-study-border text-xs font-semibold text-study-text focus:outline-none focus:border-study-primary transition-colors cursor-pointer"
+              aria-label="Chọn tình huống luyện viết"
+              className="w-full min-w-0 max-w-full xl:w-auto px-3 py-1.5 rounded-xl bg-study-surface-muted border border-study-border text-xs font-semibold text-study-text focus:outline-none focus:border-study-primary transition-colors cursor-pointer"
             >
               {writingTemplates.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -146,7 +147,7 @@ export function Writing() {
           </div>
 
           {/* 2 Rewritten Versions: Professional vs Casual */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {/* Version 1: Professional */}
             <div className="p-5 rounded-2xl bg-study-surface border border-study-primary-border/70 shadow-xs space-y-3 flex flex-col justify-between">
               <div className="space-y-2">
@@ -286,7 +287,7 @@ export function Writing() {
           {/* Reveal Natural English & Breakdown */}
           {showReflexExplanation && (
             <div className="space-y-4 animate-fade-in">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {/* Literal Trap */}
                 <div className="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/20 space-y-2">
                   <span className="text-xs font-semibold text-rose-600 flex items-center gap-1.5">

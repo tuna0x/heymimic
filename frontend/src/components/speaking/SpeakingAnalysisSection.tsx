@@ -1,9 +1,11 @@
 import { ArrowRight, CheckCircle2, Wand2 } from 'lucide-react'
+import { motion } from 'motion/react'
 import { AcousticMetrics } from './AcousticMetrics'
 import { AudioPlayerBar } from './AudioPlayerBar'
 import { FeedbackCard } from './FeedbackCard'
 import { SentenceDiffCard } from './SentenceDiffCard'
 import type { SpeakingResult } from '../../type'
+import { learningFadeUp } from '../shared/learningMotion'
 
 interface SpeakingAnalysisSectionProps {
   result: SpeakingResult
@@ -29,7 +31,7 @@ export function SpeakingAnalysisSection({
   onFinishSpeaking,
 }: SpeakingAnalysisSectionProps) {
   return (
-    <div className="space-y-6 animate-fade-in">
+    <motion.div className="space-y-6" {...learningFadeUp}>
       {/* Evaluation provenance */}
       <div className="p-4 rounded-2xl bg-study-primary-soft/50 border border-study-primary-border/60 text-xs text-study-text flex items-start gap-3">
         <CheckCircle2 size={18} className="text-study-primary shrink-0 mt-0.5" />
@@ -47,7 +49,7 @@ export function SpeakingAnalysisSection({
       {/* Audio Playback Bar */}
       <AudioPlayerBar
         audioUrl={audioUrl}
-        recordingDurationSeconds={recordingTime || 78}
+        recordingDurationSeconds={recordingTime || undefined}
         onReRecord={onReRecord}
       />
 
@@ -67,7 +69,7 @@ export function SpeakingAnalysisSection({
               <span>Biến hóa câu 3 sắc thái ✨</span>
             </button>
             <span className="text-[11px] text-study-text-muted">
-              {recordingTime || 78} giây thực tế
+              {recordingTime ? `${recordingTime} giây thực tế` : "Chưa có thời lượng thực tế"}
             </span>
           </div>
         </div>
@@ -130,6 +132,6 @@ export function SpeakingAnalysisSection({
           <ArrowRight size={15} />
         </button>
       </div>
-    </div>
+    </motion.div>
   )
 }

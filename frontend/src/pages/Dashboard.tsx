@@ -1,4 +1,3 @@
-import { Flame } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SectionLabel, Streak } from '../components/shared/UI'
@@ -11,20 +10,35 @@ import { usePageMeta } from '../hook/usePageMeta'
 import { useMimicStore } from '../store/useMimicStore'
 import { ApiErrorNotice } from '../components/shared/ApiErrorNotice'
 import { describeApiError, type ApiFailure } from '../service/api'
-import { progressService, type ProgressOverview } from '../service/progressService'
+import {
+  progressService,
+  type ProgressOverview,
+} from '../service/progressService'
 import { speakingService, toSpeakingTopic } from '../service/speakingService'
 import { studyService } from '../service/studyService'
 import { vocabService } from '../service/vocabService'
-import type { DailyRecommendation, ProgressDay, SpeakingTopic, VocabWord } from '../type'
+import type {
+  DailyRecommendation,
+  ProgressDay,
+  SpeakingTopic,
+  VocabWord,
+} from '../type'
 
 export function Dashboard() {
-  usePageMeta('Hôm nay — Phòng Luyện Tập HeyMimic', 'Phòng học cá nhân hóa hôm nay: từ vựng và bài luyện phản xạ nói 60–90 giây.')
+  usePageMeta(
+    'Hôm nay — Phòng Luyện Tập HeyMimic',
+    'Phòng học cá nhân hóa hôm nay: từ vựng và bài luyện phản xạ nói 60–90 giây.'
+  )
 
   const navigate = useNavigate()
   const profile = useMimicStore((state) => state.profile)
   const activeStudySession = useMimicStore((state) => state.activeStudySession)
-  const setActiveStudySession = useMimicStore((state) => state.setActiveStudySession)
-  const getDailyRecommendation = useMimicStore((state) => state.getDailyRecommendation)
+  const setActiveStudySession = useMimicStore(
+    (state) => state.setActiveStudySession
+  )
+  const getDailyRecommendation = useMimicStore(
+    (state) => state.getDailyRecommendation
+  )
   const [vocabWords, setVocabWords] = useState<VocabWord[]>([])
   const [speakingTopics, setSpeakingTopics] = useState<SpeakingTopic[]>([])
   const [overview, setOverview] = useState<ProgressOverview | null>(null)
@@ -61,7 +75,11 @@ export function Dashboard() {
     const kind = overview.recommendation.kind
     return {
       activityType:
-        kind === 'vocabularyReview' ? 'vocab' : kind === 'mistake' ? 'mistake' : 'speaking',
+        kind === 'vocabularyReview'
+          ? 'vocab'
+          : kind === 'mistake'
+            ? 'mistake'
+            : 'speaking',
       targetId: overview.recommendation.targetId ?? '',
       title: overview.recommendation.title,
       reason: 'Được đề xuất từ tiến độ học gần nhất của bạn.',
@@ -73,15 +91,15 @@ export function Dashboard() {
       ...profile,
       streakDays: overview?.streakDays ?? profile.streakDays,
       totalMinutes: overview?.totalMinutes ?? profile.totalMinutes,
-      dailyMinutesGoal: (overview?.dailyGoalMinutes ?? profile.dailyMinutesGoal) as
-        | 5
-        | 10
-        | 15,
+      dailyMinutesGoal: (overview?.dailyGoalMinutes ??
+        profile.dailyMinutesGoal) as 5 | 10 | 15,
     }),
     [overview, profile]
   )
   const targetTopic = useMemo(
-    () => speakingTopics.find((topic) => topic.id === recommendation.targetId) ?? speakingTopics[0],
+    () =>
+      speakingTopics.find((topic) => topic.id === recommendation.targetId) ??
+      speakingTopics[0],
     [recommendation.targetId, speakingTopics]
   )
 
@@ -127,54 +145,60 @@ export function Dashboard() {
         <div>
           <SectionLabel>{todayStr}</SectionLabel>
           <h1 className="text-3xl sm:text-4xl font-display font-medium text-study-text tracking-tight mt-1">
-            Chào {profile.name || 'bạn'}<span className="text-study-primary">.</span>
+            Chào {profile.name || 'bạn'}
+            <span className="text-study-primary">.</span>
           </h1>
           <p className="text-xs sm:text-sm text-study-text-muted mt-1.5 max-w-md leading-relaxed">
             {displayedProfile.streakDays > 0
-              ? 'Một chút đều đặn hôm nay sẽ tạo nên sự tự tin tự nhiên khi trò chuyện sau này.'
-              : 'Chào mừng bạn đến với Mimic. Hãy bắt đầu buổi học đầu tiên để tạo đà tự tin!'}
+              ? 'Dành một chút thời gian cho tiếng Anh hôm nay.'
+              : 'Bắt đầu từ một buổi học ngắn. Tự tin hơn từng ngày.'}
           </p>
         </div>
 
         {/* Dynamic Streak Card */}
-        <div className="flex items-center gap-4 px-4 py-3 rounded-2xl bg-study-surface border border-study-border shadow-xs">
-          <div className="p-2.5 rounded-xl bg-study-accent-soft text-study-accent">
-            <Flame size={20} fill="currentColor" />
-          </div>
+        <div className="flex items-center gap-3 py-3">
           <div>
             <Streak count={displayedProfile.streakDays} compact={false} />
             <span className="block text-[11px] text-study-text-muted mt-0.5">
-              {displayedProfile.streakDays > 0 ? 'Đang duy trì nhịp học đều đặn' : 'Bắt đầu chuỗi học hôm nay'}
+              {displayedProfile.streakDays > 0
+                ? 'Đang duy trì nhịp học đều đặn'
+                : 'Bắt đầu chuỗi học hôm nay'}
             </span>
           </div>
         </div>
       </div>
 
       {failure && (
-        <ApiErrorNotice failure={failure} onRetry={() => setReloadKey((value) => value + 1)} />
+        <ApiErrorNotice
+          failure={failure}
+          onRetry={() => setReloadKey((value) => value + 1)}
+        />
       )}
 
       {/* Main Focus: Today's Study Session (4 States) */}
-      <TodaySessionFocus
-        activeStudySession={activeStudySession}
-        targetTopic={targetTopic}
-        recommendation={recommendation}
-        profile={displayedProfile}
-        onStartTodaySession={handleStartTodaySession}
-        onResumeSession={handleResumeSession}
-      />
+      <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <TodaySessionFocus
+          activeStudySession={activeStudySession}
+          targetTopic={targetTopic}
+          recommendation={recommendation}
+          profile={displayedProfile}
+          onStartTodaySession={handleStartTodaySession}
+          onResumeSession={handleResumeSession}
+        />
+        <WeeklyProgressWidget progress={weeklyProgress} />
+      </div>
 
       {/* Daily Priority Gateways: Vocab & Speaking */}
-      <DailyPriorityGateways vocabWords={vocabWords} targetTopic={targetTopic} />
+      <DailyPriorityGateways
+        vocabWords={vocabWords}
+        targetTopic={targetTopic}
+      />
 
       {/* Flagship Interactive Features: Peer Practice & Video Shadowing */}
       <FlagshipFeaturesBanner />
 
       {/* 4 Pillars Ecosystem Grid: Listening, Dialogue, Collocations, Writing */}
       <PersonalSkillPillarsGrid />
-
-      {/* Secondary Grid: Weekly Practice Rhythm & Insight */}
-      <WeeklyProgressWidget progress={weeklyProgress} />
     </div>
   )
 }

@@ -1,0 +1,167 @@
+/* Learning workspace: scoped to authenticated routes. */
+.learning-app {
+  --font-sans: 'Inter', 'Segoe UI', sans-serif;
+  --color-study-primary: var(--primary);
+  --color-study-primary-hover: var(--primary-hover);
+  --color-study-accent: var(--accent);
+  --color-study-accent-hover: var(--accent-hover);
+  --primary: #087c89;
+  --primary-hover: #066571;
+  --accent: #a94f31;
+  --accent-hover: #8d4027;
+  font-family: var(--font-sans);
+}
+
+.dark .learning-app {
+  --primary: #64cdd5;
+  --primary-hover: #8cdee3;
+  --accent: #e9a184;
+  --accent-hover: #f2b79f;
+}
+
+.learning-app h1 {
+  font-size: clamp(1.75rem, 2.4vw, 2.25rem);
+  line-height: 1.25;
+  font-weight: 700;
+  text-wrap: balance;
+}
+.learning-app :is(h2, h3, h4) {
+  text-wrap: balance;
+}
+.learning-app p {
+  text-wrap: pretty;
+}
+.learning-app .section-label {
+  font-size: 0.8125rem;
+  text-transform: none;
+}
+.learning-app .text-xs {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.learning-app .text-\[11px\] {
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.learning-app :is(.animate-page-enter, .page-enter) {
+  animation: none;
+  will-change: auto;
+}
+.learning-app .clean-card {
+  box-shadow: none;
+  transition: none;
+}
+.learning-app .clean-card-hover:hover {
+  transform: none;
+  box-shadow: none;
+}
+.learning-app .workspace-content {
+  width: 100%;
+  max-width: 1280px;
+}
+.learning-app .workspace-content > div {
+  min-width: 0;
+}
+.learning-app .workspace-content > div > :is(header, div:first-child) h1 {
+  margin-top: 0.5rem;
+}
+.learning-app
+  .workspace-content
+  > div
+  > :is(header, div:first-child)
+  > div
+  > p {
+  margin-top: 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+.learning-app .mobile-navigation {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+.dark .learning-app :is(.bg-study-primary, .bg-study-accent).text-white {
+  color: var(--bg);
+}
+
+.session-focus {
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+}
+.session-plan {
+  counter-reset: session-step;
+}
+.session-plan li {
+  counter-increment: session-step;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.session-plan li::before {
+  content: counter(session-step, decimal-leading-zero);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learning-app *,
+  .learning-app *::before,
+  .learning-app *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+.learning-app :is(button, a) {
+  -webkit-tap-highlight-color: transparent;
+}
+.learning-app :is(button, a):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.learning-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+.learning-stage__main,
+.learning-stage__support {
+  min-width: 0;
+}
+.learning-stage__support {
+  display: grid;
+  gap: 1rem;
+}
+.learning-surface {
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.04);
+}
+.learning-surface-subtle {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-muted);
+}
+.learning-app .motion-control {
+  transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease,
+    color 120ms ease, opacity 120ms ease;
+}
+.learning-app .motion-control:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.learning-app .motion-control:disabled {
+  cursor: not-allowed;
+}
+@media (min-width: 1024px) {
+  .learning-stage:has(.learning-stage__support) {
+    grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
+  }
+}

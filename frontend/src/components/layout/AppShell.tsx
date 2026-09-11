@@ -1,31 +1,31 @@
 import {
-  Bell,
   BookOpen,
-  ChartNoAxesCombined,
-  Headphones,
   LayoutDashboard,
   Menu,
   Mic2,
   PanelLeftClose,
   PanelLeftOpen,
-  PenTool,
   Tv,
   Users2,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useMimicStore } from '../../store/useMimicStore'
 import { Sidebar } from './Sidebar'
 import { BrandLogo } from '../shared/BrandLogo'
 import { BackToTop } from '../shared/BackToTop'
+import '../../styles/app.css'
+import { learningFadeUp } from '../shared/learningMotion'
 
 function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/vocab/review')) return 'Phiên ôn tập từ vựng'
   if (pathname.startsWith('/speaking/history/')) return 'Chi tiết bài nói'
   if (pathname.startsWith('/speaking/history')) return 'Lịch sử luyện nói'
   if (pathname.startsWith('/speaking/dialogue')) return 'Hội thoại AI 2 chiều'
-  if (pathname.startsWith('/session/') && pathname.endsWith('/summary')) return 'Tổng kết buổi học'
+  if (pathname.startsWith('/session/') && pathname.endsWith('/summary'))
+    return 'Tổng kết buổi học'
   if (pathname.startsWith('/progress/mistakes/')) return 'Chi tiết lỗi'
   if (pathname.startsWith('/peer-practice/room')) return 'Phòng nói 1-kèm-1'
   if (pathname.startsWith('/peer-practice/join')) return 'Tham gia phiên peer'
@@ -60,9 +60,16 @@ export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
   const title = getPageTitle(location.pathname)
-  const today = useMemo(() => new Intl.DateTimeFormat('vi-VN', {
-    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
-  }).format(new Date()), [])
+  const today = useMemo(
+    () =>
+      new Intl.DateTimeFormat('vi-VN', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      }).format(new Date()),
+    []
+  )
 
   // Keyboard shortcut Ctrl+B / Cmd+B to toggle sidebar
   useEffect(() => {
@@ -84,7 +91,8 @@ export function AppShell() {
   }, [toggleSidebar])
 
   return (
-    <div className="min-h-screen flex bg-study-bg text-study-text selection:bg-study-primary/20">
+    <MotionConfig reducedMotion="user">
+      <div className="learning-app min-h-dvh flex bg-study-bg text-study-text selection:bg-study-primary/20">
       {/* Mobile Drawer Backdrop & Menu */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
@@ -109,6 +117,7 @@ export function AppShell() {
                 isLight={isLight}
                 onToggleTheme={toggleTheme}
                 isMobileDrawer={true}
+                onNavigate={() => setMobileOpen(false)}
               />
             </div>
           </div>
@@ -117,8 +126,8 @@ export function AppShell() {
 
       {/* Desktop Sidebar (Sticky, anchored in place while page scrolls) */}
       <div
-        className={`hidden md:block sticky top-0 h-screen self-start shrink-0 z-30 transition-[width] duration-300 ease-in-out ${
-          sidebarCollapsed ? 'w-20' : 'w-64'
+        className={`hidden md:block sticky top-0 h-dvh self-start shrink-0 z-30 ${
+          sidebarCollapsed ? 'w-20' : 'w-60'
         }`}
       >
         <Sidebar
@@ -132,7 +141,7 @@ export function AppShell() {
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 flex flex-col pb-20 md:pb-8">
         {/* Topbar */}
-        <header className="h-16 border-b border-study-border bg-study-surface/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20">
+        <header className="h-16 border-b border-study-border bg-study-surface px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-3">
             {/* Mobile menu trigger */}
             <button
@@ -149,44 +158,48 @@ export function AppShell() {
               type="button"
               onClick={toggleSidebar}
               className="hidden md:inline-flex p-2 rounded-xl text-study-text-muted hover:text-study-text hover:bg-study-surface-hover transition-colors cursor-pointer items-center justify-center"
-              title={sidebarCollapsed ? 'Mở rộng thanh điều hướng (Ctrl+B)' : 'Thu gọn thanh điều hướng (Ctrl+B)'}
-              aria-label={sidebarCollapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'}
+              title={
+                sidebarCollapsed
+                  ? 'Mở rộng thanh điều hướng (Ctrl+B)'
+                  : 'Thu gọn thanh điều hướng (Ctrl+B)'
+              }
+              aria-label={
+                sidebarCollapsed
+                  ? 'Mở rộng thanh điều hướng'
+                  : 'Thu gọn thanh điều hướng'
+              }
             >
-              {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              {sidebarCollapsed ? (
+                <PanelLeftOpen size={18} />
+              ) : (
+                <PanelLeftClose size={18} />
+              )}
             </button>
 
-            <h2 className="text-sm font-semibold text-study-text md:hidden">{title}</h2>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-study-text-muted">
-              <span className="w-2 h-2 rounded-full bg-study-primary shadow-xs" />
-              <span>Phòng luyện tập sẵn sàng</span>
-            </div>
+            <span className="text-sm font-medium text-study-text">{title}</span>
           </div>
 
           <div className="flex items-center gap-4">
             <span className="text-xs font-medium text-study-text-muted capitalize hidden sm:inline-block">
               {today}
             </span>
-            <button
-              type="button"
-              className="relative p-2 rounded-xl text-study-text-muted hover:text-study-text hover:bg-study-surface-hover transition-colors cursor-pointer"
-              aria-label="Thông báo"
-            >
-              <Bell size={17} />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-study-accent" />
-            </button>
           </div>
         </header>
 
         {/* Dynamic Page Outlet */}
-        <div key={location.pathname} className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-page-enter">
-          <Outlet />
+        <div className="workspace-content flex-1 mx-auto px-5 sm:px-8 lg:px-10 py-8 sm:py-10">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={location.pathname} {...learningFadeUp}>
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 
       {/* Mobile Bottom Navigation (Task A06) */}
       <nav
         aria-label="Điều hướng nhanh di động"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-study-surface/95 backdrop-blur-md border-t border-study-border px-3 py-1.5 flex items-center justify-around shadow-lg"
+        className="mobile-navigation md:hidden fixed bottom-0 left-0 right-0 z-30 bg-study-surface border-t border-study-border px-2 py-2 flex items-center justify-around"
       >
         {mobileNavItems.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -207,7 +220,7 @@ export function AppShell() {
       </nav>
 
       <BackToTop />
-    </div>
+      </div>
+    </MotionConfig>
   )
 }
-

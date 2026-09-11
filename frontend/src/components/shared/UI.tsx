@@ -3,7 +3,7 @@ import { ArrowUpRight, Check, ChevronRight, Flame } from 'lucide-react'
 
 export function SectionLabel({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`text-xs font-medium text-study-text-muted/90 flex items-center gap-1.5 ${className}`}>
+    <div className={`section-label text-xs font-medium text-study-text-muted/90 flex items-center gap-1.5 ${className}`}>
       {children}
     </div>
   )

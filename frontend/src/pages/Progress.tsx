@@ -123,14 +123,14 @@ export function Progress() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12 text-left animate-fade-in">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-study-border">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-study-border">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-study-primary mb-1">
             <Trophy size={14} />
-            <span>NHẬT KÝ TIẾN BỘ CÁ NHÂN</span>
+            <span>Nhật ký học tập</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-study-text">
-            Nhìn lại nhịp học & Điểm cần luyện
+            Tiến bộ từng ngày
           </h1>
           <p className="text-xs sm:text-sm text-study-text-muted mt-1 max-w-xl leading-relaxed">
             Duy trì đều đặn 10 phút mỗi ngày giúp chuyển đổi từ vựng và cấu trúc ngữ pháp thành phản xạ tự nhiên.

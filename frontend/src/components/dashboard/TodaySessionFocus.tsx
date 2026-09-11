@@ -1,7 +1,11 @@
-import { ArrowRight, CheckCircle2 } from 'lucide-react'
+import { BookOpen, CheckCircle2, Clock3, Mic2, Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import type { DailyRecommendation, LearnerProfile, SpeakingTopic, StudySession } from '../../type'
-
+import type {
+  DailyRecommendation,
+  LearnerProfile,
+  SpeakingTopic,
+  StudySession,
+} from '../../type'
 interface TodaySessionFocusProps {
   activeStudySession: StudySession | null
   targetTopic?: SpeakingTopic
@@ -10,114 +14,86 @@ interface TodaySessionFocusProps {
   onStartTodaySession: () => void
   onResumeSession: () => void
 }
-
 export function TodaySessionFocus({
   activeStudySession,
   targetTopic,
   recommendation,
-  profile,
   onStartTodaySession,
   onResumeSession,
 }: TodaySessionFocusProps) {
+  const complete = activeStudySession?.status === 'completed'
+  const inProgress = activeStudySession?.status === 'inProgress'
   return (
-    <section className="bg-study-surface border border-study-border rounded-2xl p-6 shadow-xs">
-      {activeStudySession?.status === 'completed' ? (
-        /* State 4: Completed today */
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 text-study-success">
-            <CheckCircle2 size={24} />
-            <h2 className="text-lg font-display font-semibold text-study-text">
-              Bạn đã hoàn thành phiên học hôm nay!
-            </h2>
-          </div>
-          <p className="text-xs text-study-text-muted leading-relaxed max-w-xl">
-            Tuyệt vời! Bạn đã hoàn thành các bước học theo kế hoạch hôm nay. Bạn có thể xem lại tổng kết, hoặc tiếp tục luyện nói thêm một chủ đề tự do nếu muốn.
-          </p>
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            <Link
-              to={`/session/${activeStudySession.id}/summary`}
-              className="px-4 py-2 rounded-xl bg-study-surface-muted hover:bg-study-surface-hover border border-study-border text-xs font-semibold text-study-text transition-colors"
-            >
-              Xem lại tổng kết buổi học
-            </Link>
-            <Link
-              to="/speaking"
-              className="px-4 py-2 rounded-xl bg-study-primary text-white text-xs font-semibold hover:bg-study-primary-hover transition-colors shadow-xs"
-            >
-              Luyện thêm chủ đề khác
-            </Link>
-          </div>
+    <section
+      className="session-focus flex h-full flex-col justify-between gap-8 rounded-2xl p-6 sm:p-8"
+      aria-labelledby="today-session-title"
+    >
+      <div>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-sm text-study-primary">
+          <span className="flex items-center gap-2 font-semibold">
+            {complete ? <CheckCircle2 size={18} /> : <BookOpen size={18} />}
+            {complete
+              ? 'Đã hoàn thành hôm nay'
+              : inProgress
+                ? 'Buổi học đang tiếp tục'
+                : 'Buổi học dành cho bạn'}
+          </span>
+          <span className="flex items-center gap-1.5 text-xs">
+            <Clock3 size={14} />
+            {recommendation.estimatedMinutes} phút
+          </span>
         </div>
-      ) : activeStudySession?.status === 'inProgress' ? (
-        /* State 3: In progress */
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-study-accent animate-pulse" />
-              <span className="text-xs font-semibold text-study-accent">Đang có buổi học dở dang</span>
-            </div>
-            <span className="text-xs text-study-text-muted">
-              Bước hiện tại: {activeStudySession.currentStep === 'speaking' ? 'Luyện nói' : 'Ôn từ vựng'}
-            </span>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-display font-semibold text-study-text">
-              {targetTopic?.title ?? 'Tiếp tục buổi học đang thực hiện'}
-            </h2>
-            <p className="text-xs text-study-text-muted mt-1">
-              Tiếp tục hoàn thành buổi học để lưu nhận xét và duy trì chuỗi streak hôm nay.
-            </p>
-          </div>
-
+        <h2
+          id="today-session-title"
+          className="max-w-xl font-display text-2xl font-bold leading-snug sm:text-3xl"
+        >
+          {complete
+            ? 'Thêm một ngày tiến bộ.'
+            : inProgress
+              ? (targetTopic?.title ?? 'Tiếp tục từ nơi bạn dừng lại.')
+              : recommendation.title}
+        </h2>
+        <p className="mt-3 max-w-lg text-sm leading-7 text-study-text-soft">
+          {complete
+            ? 'Buổi học đã được lưu. Xem lại những điều bạn vừa luyện và mang chúng vào cuộc trò chuyện tiếp theo.'
+            : inProgress
+              ? 'Hoàn thành phần còn lại để lưu nhận xét và giữ nhịp học hôm nay.'
+              : recommendation.reason}
+        </p>
+      </div>
+      {!complete && (
+        <ol className="session-plan flex flex-wrap gap-x-6 gap-y-3 text-sm text-study-text-soft">
+          <li>Ôn từ vựng</li>
+          <li>Luyện nói</li>
+          <li>Xem phản hồi</li>
+        </ol>
+      )}
+      <div className="flex flex-wrap items-center gap-4">
+        {complete ? (
+          <Link
+            to={'/session/' + activeStudySession.id + '/summary'}
+            className="inline-flex min-h-12 items-center rounded-xl bg-study-accent px-5 text-sm font-semibold text-white hover:bg-study-accent-hover"
+          >
+            Xem tổng kết buổi học
+          </Link>
+        ) : (
           <button
             type="button"
-            onClick={onResumeSession}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-study-accent text-white text-xs font-semibold hover:bg-study-accent-hover transition-colors shadow-xs cursor-pointer"
+            onClick={inProgress ? onResumeSession : onStartTodaySession}
+            className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-study-accent px-5 text-sm font-semibold text-white hover:bg-study-accent-hover"
           >
-            <span>Tiếp tục bài học dở</span>
-            <ArrowRight size={14} />
+            <Play size={16} />
+            {inProgress ? 'Tiếp tục buổi học' : 'Bắt đầu buổi học'}
           </button>
-        </div>
-      ) : (
-        /* State 1 & 2: New learner or Not started today */
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-study-primary">
-              Gợi ý buổi học hôm nay · Khoảng {recommendation.estimatedMinutes} phút
-            </span>
-            <span className="text-[11px] text-study-text-muted">
-              Dành cho mục tiêu: {profile.goal === 'interview' ? 'Phỏng vấn' : 'Công sở'}
-            </span>
-          </div>
-
-          <div className="space-y-1.5">
-            <h2 className="text-xl sm:text-2xl font-display font-semibold text-study-text">
-              {recommendation.title}
-            </h2>
-            <p className="text-xs text-study-text-muted leading-relaxed max-w-xl">
-              {recommendation.reason}
-            </p>
-          </div>
-
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={onStartTodaySession}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-study-accent text-white text-xs font-semibold hover:bg-study-accent-hover transition-all shadow-xs cursor-pointer"
-            >
-              <span>Bắt đầu buổi học hôm nay</span>
-              <ArrowRight size={14} />
-            </button>
-            <Link
-              to="/vocab"
-              className="px-4 py-2.5 rounded-xl bg-study-surface-muted hover:bg-study-surface-hover border border-study-border text-xs font-medium text-study-text transition-colors"
-            >
-              Xem chi tiết kho từ
-            </Link>
-          </div>
-        </div>
-      )}
+        )}
+        <Link
+          to={complete ? '/speaking' : '/vocab'}
+          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-study-text-soft hover:text-study-primary"
+        >
+          {complete && <Mic2 size={16} />}
+          {complete ? 'Luyện thêm chủ đề khác' : 'Khám phá kho từ'}
+        </Link>
+      </div>
     </section>
   )
 }

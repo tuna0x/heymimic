@@ -10,6 +10,7 @@ import { TopicSelector } from '../components/speaking/TopicSelector'
 import { ApiErrorNotice } from '../components/shared/ApiErrorNotice'
 import { CapabilityNotice } from '../components/shared/CapabilityNotice'
 import { SectionLabel, StatusPill } from '../components/shared/UI'
+import { LearningStage } from '../components/shared/LearningStage'
 import { useAmbientSound } from '../hook/useAmbientSound'
 import { useAudioRecorder } from '../hook/useAudioRecorder'
 import { useLiveSpeechRecognition } from '../hook/useLiveSpeechRecognition'
@@ -343,45 +344,51 @@ export function Speaking() {
         </div>
       )}
 
-      <TopicSelector
-        topics={topics}
-        activeTopicId={activeTopic.id}
-        onSelectTopic={handleSelectTopic}
-        disabled={isRecording || Boolean(serverSession) || busy}
-      />
+      <LearningStage
+        className="learning-speaking-stage"
+        support={(
+          <SpeakingContextCard
+            activeTopic={activeTopic}
+            carriedWords={carriedWords}
+            isPlayingModel={isPlayingModel}
+            showOutline={showOutline}
+            secretMissionTarget={secretMissionTarget}
+            secretMissionDetected={secretMissionDetected}
+            onSelectSecretMission={(missionWord) => {
+              setSecretMissionTarget(missionWord)
+              setSecretMissionDetected(false)
+            }}
+            onToggleModelSpeech={handleToggleModelSpeech}
+            onToggleOutline={() => setShowOutline((value) => !value)}
+          />
+        )}
+      >
+        <div className="space-y-4">
+          <TopicSelector
+            topics={topics}
+            activeTopicId={activeTopic.id}
+            onSelectTopic={handleSelectTopic}
+            disabled={isRecording || Boolean(serverSession) || busy}
+          />
 
-      <SpeakingContextCard
-        activeTopic={activeTopic}
-        carriedWords={carriedWords}
-        isPlayingModel={isPlayingModel}
-        showOutline={showOutline}
-        secretMissionTarget={secretMissionTarget}
-        secretMissionDetected={secretMissionDetected}
-        onSelectSecretMission={(missionWord) => {
-          setSecretMissionTarget(missionWord)
-          setSecretMissionDetected(false)
-        }}
-        onToggleModelSpeech={handleToggleModelSpeech}
-        onToggleOutline={() => setShowOutline((value) => !value)}
-      />
-
-      <SpeakingStudioRecorder
-        isRecording={isRecording}
-        isProcessing={busy}
-        isComplete={isComplete}
-        recordingTime={recordingTime}
-        liveVolume={liveVolume}
-        liveTranscript={liveTranscript}
-        interimTranscript={interimTranscript}
-        liveWpm={liveWpm}
-        usingRealMic={usingRealMic}
-        startDisabled={capabilityGate.blocked}
-        targetOutline={activeTopic.outline}
-        onStartRecording={() => void handleStartRecording()}
-        onStopRecording={handleStopRecording}
-        onResetRecording={handleResetRecording}
-      />
-
+          <SpeakingStudioRecorder
+            isRecording={isRecording}
+            isProcessing={busy}
+            isComplete={isComplete}
+            recordingTime={recordingTime}
+            liveVolume={liveVolume}
+            liveTranscript={liveTranscript}
+            interimTranscript={interimTranscript}
+            liveWpm={liveWpm}
+            usingRealMic={usingRealMic}
+            startDisabled={capabilityGate.blocked}
+            targetOutline={activeTopic.outline}
+            onStartRecording={() => void handleStartRecording()}
+            onStopRecording={handleStopRecording}
+            onResetRecording={handleResetRecording}
+          />
+        </div>
+      </LearningStage>
       {evaluationBusy && (
         <div role="status" className="rounded-2xl border border-study-border bg-study-surface p-5 text-xs text-study-text-muted">
           Đang tải bản ghi và chờ dịch vụ phân tích. Bạn có thể giữ nguyên trang này…

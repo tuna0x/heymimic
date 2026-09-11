@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Mic2, RotateCcw, Volume2, VolumeX,
 import { usePageMeta } from '../hook/usePageMeta'
 import { useMimicStore } from '../store/useMimicStore'
 import { ProgressBar } from '../components/shared/UI'
+import { FlipCardFrame } from '../components/shared/FlipCardFrame'
 import { ApiErrorNotice } from '../components/shared/ApiErrorNotice'
 import { describeApiError, type ApiFailure } from '../service/api'
 import {
@@ -368,66 +369,58 @@ export function VocabReview() {
 
       {/* Main Flashcard Frame */}
       {currentWord && (
-        <div className="bg-study-surface border border-study-border rounded-3xl p-6 sm:p-8 shadow-sm min-h-[340px] flex flex-col justify-between transition-all">
-          {!flipped ? (
-            /* Front of the card: Word & Pronunciation */
-            <div className="space-y-6 my-auto text-center py-4">
-              <span className="text-[11px] font-semibold text-study-primary uppercase tracking-wider block">
-                Từ thứ {currentIndex + 1}
-              </span>
-
-              <div className="space-y-2">
-                <h2 className="text-4xl font-display font-bold text-study-text tracking-tight">
-                  {currentWord.word}
-                </h2>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-study-primary-soft/80 border border-study-primary-border/60 text-xs font-mono font-medium text-study-primary">
-                  <span>{currentWord.pronunciation}</span>
-                  <button
-                    type="button"
-                    onClick={speak}
-                    className={`hover:scale-110 transition-transform cursor-pointer p-0.5 ${
-                      speaking ? 'text-study-accent animate-pulse' : ''
-                    }`}
-                    aria-label="Nghe phát âm chuẩn"
-                  >
-                    {speakError ? <VolumeX size={14} className="text-rose-500" /> : <Volume2 size={14} />}
-                  </button>
-                </div>
-              </div>
-
-              <p className="text-xs text-study-text-muted max-w-xs mx-auto">
-                Nhấn lật thẻ để xem định nghĩa tiếng Việt, ví dụ câu và cách dùng.
-              </p>
-            </div>
-          ) : (
-            /* Back of the card: Meaning & Example */
-            <div className="space-y-5 my-auto py-2 text-left animate-fade-in">
-              <div className="flex items-center justify-between text-xs text-study-text-muted">
-                <span className="font-mono text-study-primary font-semibold">
-                  {currentWord.word}
+        <div className="learning-surface rounded-3xl p-6 sm:p-8 min-h-[340px] flex flex-col justify-between">
+          <FlipCardFrame
+            flipped={flipped}
+            front={(
+              <div className="space-y-6 my-auto text-center py-4 min-h-[280px] flex flex-col justify-center">
+                <span className="text-[11px] font-semibold text-study-primary uppercase tracking-wider block">
+                  Từ thứ {currentIndex + 1}
                 </span>
-                <span>{currentWord.partOfSpeech || 'Từ loại'}</span>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-xl font-display font-semibold text-study-text">
-                  {currentWord.meaning}
-                </h3>
-                <div className="p-3.5 rounded-xl bg-study-surface-muted/60 border border-study-border text-xs text-study-text-soft italic leading-relaxed">
-                  “{currentWord.example}”
+                <div className="space-y-2">
+                  <h2 className="text-4xl font-display font-bold text-study-text tracking-tight">
+                    {currentWord.word}
+                  </h2>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-study-primary-soft/80 border border-study-primary-border/60 text-xs font-mono font-medium text-study-primary">
+                    <span>{currentWord.pronunciation}</span>
+                    <button
+                      type="button"
+                      onClick={speak}
+                      className={`motion-control hover:scale-110 cursor-pointer p-0.5 ${
+                        speaking ? 'text-study-accent animate-pulse' : ''
+                      }`}
+                      aria-label="Nghe phát âm chuẩn"
+                    >
+                      {speakError ? <VolumeX size={14} className="text-rose-500" /> : <Volume2 size={14} />}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-xs text-study-text-muted">
-                  {currentWord.translation}
+                <p className="text-xs text-study-text-muted max-w-xs mx-auto">
+                  Nhấn lật thẻ để xem định nghĩa tiếng Việt, ví dụ câu và cách dùng.
                 </p>
               </div>
-            </div>
-          )}
+            )}
+            back={(
+              <div className="space-y-5 my-auto py-2 min-h-[280px] flex flex-col justify-center text-left">
+                <div className="flex items-center justify-between text-xs text-study-text-muted">
+                  <span className="font-mono text-study-primary font-semibold">{currentWord.word}</span>
+                  <span>{currentWord.partOfSpeech || 'Từ loại'}</span>
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-xl font-display font-semibold text-study-text">{currentWord.meaning}</h3>
+                  <div className="p-3.5 rounded-xl bg-study-surface-muted/60 border border-study-border text-xs text-study-text-soft italic leading-relaxed">
+                    “{currentWord.example}”
+                  </div>
+                  <p className="text-xs text-study-text-muted">{currentWord.translation}</p>
+                </div>
+              </div>
+            )}
+          />
 
-          {/* Flip Card Button */}
           <button
             type="button"
             onClick={() => setFlipped(!flipped)}
-            className="w-full mt-4 py-2.5 rounded-xl border border-study-border hover:border-study-primary/40 bg-study-surface-muted/40 hover:bg-study-surface-hover text-xs font-semibold text-study-text flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
+            className="motion-control w-full mt-4 py-2.5 rounded-xl border border-study-border hover:border-study-primary/40 bg-study-surface-muted/40 hover:bg-study-surface-hover text-xs font-semibold text-study-text flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
           >
             <RotateCcw size={13} className="text-study-text-muted" />
             <span>{flipped ? 'Xem lại mặt trước' : 'Lật thẻ xem đáp án'}</span>

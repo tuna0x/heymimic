@@ -103,14 +103,14 @@ export function Listening() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16 text-left animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-study-border">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-6 border-b border-study-border">
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-study-primary mb-1">
             <Headphones size={14} />
-            <span>SHADOWING & INPUT LAB</span>
+            <span>Không gian luyện nghe</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-study-text">
-            Luyện nghe ngắt câu & Bắt chước
+            Nghe kỹ, nói tự nhiên
           </h1>
           <p className="text-xs sm:text-sm text-study-text-muted mt-1 leading-relaxed">
             Nghe từng câu ngắn, nhận diện nối âm (connected speech) và thu âm bắt chước ngữ điệu bản xứ.
@@ -126,7 +126,8 @@ export function Listening() {
               setActiveSegmentIndex(0)
               setHasRecordedShadow(false)
             }}
-            className="px-3.5 py-2 rounded-xl bg-study-surface border border-study-border text-xs font-semibold text-study-text focus:outline-none focus:border-study-primary transition-colors cursor-pointer"
+            aria-label="Chọn bài luyện nghe"
+            className="w-full min-w-0 max-w-full xl:max-w-80 px-3.5 py-2 rounded-xl bg-study-surface border border-study-border text-xs font-semibold text-study-text focus:outline-none focus:border-study-primary transition-colors cursor-pointer"
           >
             {listeningExercises.map((ex) => (
               <option key={ex.id} value={ex.id}>

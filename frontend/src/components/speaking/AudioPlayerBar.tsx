@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 
 interface AudioPlayerBarProps {
   audioUrl: string | null
-  recordingDurationSeconds: number
+  recordingDurationSeconds?: number
   onReRecord?: () => void
 }
 
@@ -90,7 +90,7 @@ export function AudioPlayerBar({
             <span>Nghe lại bài nói của bạn</span>
           </div>
           <span className="text-[11px] text-study-text-muted font-mono">
-            {formatTime(currentTime)} / {formatTime(duration)}
+            {formatTime(currentTime)} / {recordingDurationSeconds || duration > 1 ? formatTime(duration) : '--:--'}
           </span>
         </div>
       </div>

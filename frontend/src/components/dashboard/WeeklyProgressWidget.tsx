@@ -1,96 +1,75 @@
-import { ArrowUpRight, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { ProgressDay } from '../../type'
-
-interface WeeklyProgressWidgetProps {
+export function WeeklyProgressWidget({
+  progress,
+}: {
   progress: ProgressDay[]
-}
-
-export function WeeklyProgressWidget({ progress }: WeeklyProgressWidgetProps) {
-  const totalMinutes = progress.reduce((sum, day) => sum + day.minutes, 0)
-  const activeDays = progress.filter((day) => day.minutes > 0).length
-
+}) {
+  const total = progress.reduce((sum, day) => sum + day.minutes, 0)
+  const active = progress.filter((day) => day.minutes > 0).length
+  const max = Math.max(35, ...progress.map((day) => day.minutes))
+  const days = progress.length
+    ? progress
+    : ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day) => ({
+        day,
+        minutes: 0,
+      }))
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      {/* Weekly Chart */}
-      <section className="lg:col-span-2 bg-study-surface border border-study-border rounded-2xl p-6 shadow-xs flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <span className="text-xs font-medium text-study-text-muted">Nhịp học trong tuần</span>
-              <h3 className="text-base font-display font-semibold text-study-text mt-0.5">
-                Thời lượng duy trì tích cực
-              </h3>
-            </div>
-            <div className="text-right">
-              <span className="text-2xl font-bold font-display text-study-text tabular-nums">
-                {totalMinutes}
-              </span>
-              <span className="text-xs text-study-text-muted ml-1">phút tổng</span>
-            </div>
-          </div>
-
-          {/* Weekly bar columns */}
-          <div className="grid grid-cols-7 gap-3 h-28 items-end pt-2 pb-1">
-            {progress.map((day) => (
-              <div key={day.day} className="flex flex-col items-center h-full justify-end group">
-                <div className="w-full max-w-[36px] bg-study-surface-muted rounded-lg h-full flex flex-col justify-end p-1">
-                  <div
-                    className={`w-full rounded-md transition-all duration-300 ${
-                      day.minutes > 0
-                        ? 'bg-study-primary group-hover:bg-study-primary-hover'
-                        : 'bg-transparent'
-                    }`}
-                    style={{ height: `${Math.max(day.minutes ? 18 : 0, (day.minutes / 35) * 100)}%` }}
-                  />
-                </div>
-                <span className="text-[11px] font-medium text-study-text-muted mt-2 group-hover:text-study-text transition-colors">
-                  {day.day}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between pt-4 border-t border-study-border-subtle mt-4 text-xs text-study-text-muted">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-study-primary" />
-            <span>{activeDays} / 7 ngày có luyện tập</span>
-          </span>
-          <Link to="/progress" className="text-xs font-semibold text-study-primary hover:underline inline-flex items-center gap-1">
-            <span>Xem sổ tay tiến độ</span>
-            <ArrowUpRight size={13} />
-          </Link>
-        </div>
-      </section>
-
-      {/* Progress Insight Note */}
-      <section className="bg-study-primary-soft/40 border border-study-primary-border/50 rounded-2xl p-6 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-4 text-study-primary">
-            <span className="w-7 h-7 rounded-lg bg-study-primary-soft flex items-center justify-center border border-study-primary-border/60">
-              <Sparkles size={15} />
-            </span>
-            <span className="text-xs font-semibold">Gợi ý phản xạ</span>
-          </div>
-          <h4 className="font-display font-medium text-base text-study-text leading-snug">
-            “Nói trôi chảy đến từ việc giảm thời gian dịch từ tiếng Việt sang tiếng Anh trong đầu.”
-          </h4>
-          <p className="text-xs text-study-text-muted mt-2.5 leading-relaxed">
-            Hãy tập dùng ngay các cụm từ nối quen thuộc như <em>“First of all...”, “Mainly focused on...”</em> để giữ nhịp tự nhiên.
-          </p>
-        </div>
-
-        <div className="pt-4 mt-4 border-t border-study-primary-border/40">
-          <Link
-            to="/speaking"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-study-primary hover:text-study-primary-hover transition-colors"
+    <section
+      className="flex h-full flex-col rounded-2xl border border-study-border bg-study-surface p-6"
+      aria-labelledby="weekly-rhythm-title"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="weekly-rhythm-title" className="text-sm font-semibold">
+          Nhịp học tuần này
+        </h2>
+        <Link
+          to="/progress"
+          className="text-xs font-medium text-study-primary hover:underline"
+        >
+          Chi tiết
+        </Link>
+      </div>
+      <div className="mt-5">
+        <span className="font-display text-4xl font-semibold tabular-nums">
+          {total}
+        </span>
+        <span className="ml-2 text-sm text-study-text-muted">
+          phút luyện tập
+        </span>
+      </div>
+      <div
+        className="mt-6 grid h-28 grid-cols-7 gap-2"
+        role="img"
+        aria-label={days
+          .map((day) => day.day + ': ' + day.minutes + ' phút')
+          .join(', ')}
+      >
+        {days.map((day) => (
+          <div
+            key={day.day}
+            className="flex h-full flex-col items-center gap-2"
           >
-            <span>Vào phòng luyện nói ngay</span>
-            <ArrowUpRight size={14} />
-          </Link>
-        </div>
-      </section>
-    </div>
+            <div className="flex w-full max-w-6 flex-1 items-end rounded bg-study-surface-muted">
+              <div
+                className="w-full rounded bg-study-primary"
+                style={{
+                  height:
+                    day.minutes > 0
+                      ? Math.max(8, (day.minutes / max) * 100) + '%'
+                      : '0%',
+                }}
+              />
+            </div>
+            <span className="text-xs text-study-text-muted">{day.day}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-5 border-t border-study-border pt-4 text-xs text-study-text-muted">
+        {active > 0
+          ? active + ' ngày bạn đã dành thời gian cho bản thân.'
+          : 'Hoàn thành buổi học đầu tiên để bắt đầu ghi lại nhịp học.'}
+      </p>
+    </section>
   )
 }

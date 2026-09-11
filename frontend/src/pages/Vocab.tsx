@@ -93,11 +93,11 @@ export function Vocab() {
   return (
     <div className="space-y-6 text-left animate-fade-in">
       {/* Page Intro Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-study-border">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-study-border">
         <div>
           <SectionLabel>Kho ngữ liệu cá nhân</SectionLabel>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-study-text tracking-tight mt-1">
-            Từ vựng & Cụm từ tự nhiên (Collocations)
+            Từ vựng của bạn
           </h1>
           <p className="text-xs sm:text-sm text-study-text-muted mt-1 max-w-lg leading-relaxed">
             Học từ gắn liền với tình huống giao tiếp và tư duy theo khối ngữ liệu để nói bật ra trôi chảy.
